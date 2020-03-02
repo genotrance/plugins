@@ -8,7 +8,7 @@ srcDir        = "src"
 
 # Dependencies
 
-requires "nim >= 0.20.2"
+requires "nim >= 1.0.6"
 
 import os, strformat, strutils
 
