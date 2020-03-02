@@ -15,7 +15,7 @@ type
   Plugin* = ref object
     ## Plugin state information is stored in this object - each plugin has an
     ## instance of this
-    ctx*: Ctx                   ## Access global context from plugin
+    manager*: PluginManager     ## Access plugin manager from plugin
     name*: string               ## Name of the plugin
     path: string
     handle: LibHandle
@@ -25,18 +25,18 @@ type
 
     pluginData*: pointer        ## Pointer to store any type T within plugin to make
                                 ## data accessible across all callbacks within plugin
-                                ## Used by `getPlgData()` and `freePlgData()`
+                                ## Used by `getPluginData()` and `freePluginData()`
 
     # Standard callbacks
-    onDepends: proc(plg: Plugin, cmd: CmdData)
-    onLoad: proc(plg: Plugin, cmd: CmdData)
-    onUnload: proc(plg: Plugin, cmd: CmdData)
-    onTick: proc(plg: Plugin, cmd: CmdData)
-    onNotify: proc(plg: Plugin, cmd: CmdData)
-    onReady: proc(plg: Plugin, cmd: CmdData)
+    onDepends: proc(plugin: Plugin, cmd: CmdData)
+    onLoad: proc(plugin: Plugin, cmd: CmdData)
+    onUnload: proc(plugin: Plugin, cmd: CmdData)
+    onTick: proc(plugin: Plugin, cmd: CmdData)
+    onNotify: proc(plugin: Plugin, cmd: CmdData)
+    onReady: proc(plugin: Plugin, cmd: CmdData)
 
     cindex: HashSet[string]
-    callbacks: Table[string, proc(plg: Plugin, cmd: CmdData)]
+    callbacks: Table[string, proc(plugin: Plugin, cmd: CmdData)]
 
   Run* = enum
     ## States of the plugin system - can be changed using the `ppause`, `presume`
@@ -51,16 +51,17 @@ type
     processed: HashSet[string]
     ready: bool
 
-  Ctx* = ref object
+  PluginManager* = ref object
     ## Global context of all loaded plugins and callbacks
     run*: Run                   ## State of system
     ready*: bool                ## True when all plugins are loaded
     cli*: seq[string]           ## Commands to run when system is ready
 
-    notify*: proc(ctx: Ctx, msg: string)                      ## Callback to invoke `pluginNotify()` across
-                                                              ## all plugins
-    handleCommand*: proc(ctx: Ctx, cmd: CmdData) {.nimcall.}  ## Invoke callback by name across all loaded
-                                                              ## plugins
+    notify*: proc(manager: PluginManager, msg: string)          ## Callback to invoke `pluginNotify()` across
+                                                                ## all plugins
+    handleCommand*: proc(manager: PluginManager, cmd: CmdData)
+      {.nimcall.}                                               ## Invoke callback by name across all loaded
+                                                                ## plugins
 
     tick*: int
     pmonitor*: ptr PluginMonitor

@@ -17,7 +17,8 @@
 ## Optional definitions are:
 ## - `pluginUnload()` which gets called before the plugin is unloaded
 ## - `pluginTick()` which gets called every time `syncPlugins()` runs
-## - `pluginNotify()` which gets called when `Ctx.notify()` is called
+## - `pluginNotify()` which gets called when `PluginManager.notify()`
+##    is called
 ## - `pluginReady()` which gets called when all plugins are loaded and
 ##    system is ready
 ## - `pluginDepends()` which should be used when a plugin depends on
@@ -29,7 +30,7 @@
 ## In addition, plugins can define custom callbacks by using the
 ## `{.pluginCallback.}` pragma.
 ##
-## Custom callbacks can be invoked by running `Ctx.handleCommand()`.
+## Custom callbacks can be invoked with `PluginManager.handleCommand()`.
 ## The callback name and params should be populated correctly in the
 ## `CmdData.params` and return values if any should be populated by
 ## the callback in `CmdData.returned`. Both these are `string` types
@@ -44,11 +45,11 @@
 ## Callbacks should ensure they check input params and returned values
 ## for validity.
 ##
-## The `getCtxData()` and `getPlgData()` procs enable storage of global
+## The `getManagerData()` and `getPluginData()` procs enable storage of global
 ## and plugin local data so that it is accessible from any plugin.
 ##
 ## The following global callbacks are available:
-## - `notify xxx` - invoke `Ctx.notify()` with param `xxx`
+## - `notify xxx` - invoke `PluginManager.notify()` with param `xxx`
 ## - `version` - get version information of plugin
 ## - `quit | exit` - stop and unload the plugin system
 ##
@@ -92,7 +93,7 @@ macro pluginCallback*(body): untyped =
   ##
   ##   import plugins/api
   ##
-  ##   proc name(plg: Plugin, cmd: CmdData) {.pluginCallback.} =
+  ##   proc name(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
   ##     discard
   if body.kind == nnkProcDef:
     ctcallbacks.incl $body[0]
@@ -120,9 +121,9 @@ template pluginLoad*(body: untyped) {.dirty.} =
   ##
   ##   pluginLoad:
   ##     echo "Loaded plugin"
-  proc onLoad*(plg: Plugin, cmd: CmdData) {.exportc, dynlib.} =
+  proc onLoad*(plugin: Plugin, cmd: CmdData) {.exportc, dynlib.} =
     bind callbacks
-    plg.cindex = callbacks
+    plugin.cindex = callbacks
 
     try:
       body
@@ -153,7 +154,7 @@ template pluginUnload*(body: untyped) {.dirty.} =
   ##
   ##   pluginUnload:
   ##     echo "Unloaded plugin"
-  proc onUnload*(plg: Plugin, cmd: CmdData) {.exportc, dynlib.} =
+  proc onUnload*(plugin: Plugin, cmd: CmdData) {.exportc, dynlib.} =
     try:
       body
     except:
@@ -169,7 +170,7 @@ template pluginTick*(body: untyped) {.dirty.} =
   ##
   ##   pluginTick:
   ##     echo "Tick plugin"
-  proc onTick*(plg: Plugin, cmd: CmdData) {.exportc, dynlib.} =
+  proc onTick*(plugin: Plugin, cmd: CmdData) {.exportc, dynlib.} =
     try:
       body
     except:
@@ -184,7 +185,7 @@ template pluginNotify*(body: untyped) {.dirty.} =
   ##
   ##   pluginNotify:
   ##     echo "Notify plugin: " & $cmd.params
-  proc onNotify*(plg: Plugin, cmd: CmdData) {.exportc, dynlib.} =
+  proc onNotify*(plugin: Plugin, cmd: CmdData) {.exportc, dynlib.} =
     try:
       body
     except:
@@ -200,7 +201,7 @@ template pluginReady*(body: untyped) {.dirty.} =
   ##
   ##   pluginReady:
   ##     echo "All plugins ready"
-  proc onReady*(plg: Plugin, cmd: CmdData) {.exportc, dynlib.} =
+  proc onReady*(plugin: Plugin, cmd: CmdData) {.exportc, dynlib.} =
     try:
       body
     except:
@@ -215,10 +216,10 @@ template pluginDepends*(deps) =
   ##   import plugins/api
   ##
   ##   pluginDepends(@["plg1", "plg2"])
-  proc onDepends*(plg: Plugin, cmd: CmdData) {.exportc, dynlib.} =
-    plg.depends.add deps
+  proc onDepends*(plugin: Plugin, cmd: CmdData) {.exportc, dynlib.} =
+    plugin.depends.add deps
 
-proc getCtxData*[T](plg: Plugin): T =
+proc getManagerData*[T](plugin: Plugin): T =
   ## Use this proc to store any type T in the global context. Data will persist
   ## across plugin unload/reload and can be used to store information that
   ## requires such persistence.
@@ -226,7 +227,7 @@ proc getCtxData*[T](plg: Plugin): T =
   ## Only first call allocates memory. Subsequent calls returns the object already
   ## allocated before.
   ##
-  ## Ensure `freeCtxData()` is called to free this memory.
+  ## Ensure `freeManagerData()` is called to free this memory.
   ##
   ## .. code-block:: nim
   ##
@@ -237,22 +238,22 @@ proc getCtxData*[T](plg: Plugin): T =
   ##       intField: int
   ##
   ##   pluginLoad:
-  ##     var pData = getCtxData[PlgData](plg)
+  ##     var pData = getManagerData[PlgData](plugin)
   ##     pData.intField = 5
   ##
   ##   pluginTick:
-  ##     var pData = getCtxData[PlgData](plg)
+  ##     var pData = getManagerData[PlgData](plugin)
   ##     pData.intField += 1
-  if not plg.ctx.pluginData.hasKey(plg.name):
+  if not plugin.manager.pluginData.hasKey(plugin.name):
     var
       data = new(T)
     GC_ref(data)
-    plg.ctx.pluginData[plg.name] = cast[pointer](data)
+    plugin.manager.pluginData[plugin.name] = cast[pointer](data)
 
-  result = cast[T](plg.ctx.pluginData[plg.name])
+  result = cast[T](plugin.manager.pluginData[plugin.name])
 
-proc freeCtxData*[T](plg: Plugin) =
-  ## Use this proc to free memory allocated in the global context with `getCtxData()`
+proc freeManagerData*[T](plugin: Plugin) =
+  ## Use this proc to free memory allocated in the global context with `getManagerData()`
   ##
   ## .. code-block:: nim
   ##
@@ -262,24 +263,24 @@ proc freeCtxData*[T](plg: Plugin) =
   ##     PlgData = object
   ##       intField: int
   ##
-  ##   proc reloadAll(plg: Plugin, cmd: CmdData) {.pluginCallback.} =
-  ##     freeCtxData[PlgData](plg)
-  ##     var plgData = getCtxData[PlugData](plg)
-  if plg.ctx.pluginData.hasKey(plg.name):
+  ##   proc reloadAll(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
+  ##     freeManagerData[PlgData](plugin)
+  ##     var plgData = getManagerData[PlugData](plugin)
+  if plugin.manager.pluginData.hasKey(plugin.name):
     var
-      data = cast[T](plg.ctx.pluginData[plg.name])
+      data = cast[T](plugin.manager.pluginData[plugin.name])
     GC_unref(data)
 
-    plg.ctx.pluginData.del(plg.name)
+    plugin.manager.pluginData.del(plugin.name)
 
-proc getPlgData*[T](plg: Plugin): T =
+proc getPluginData*[T](plugin: Plugin): T =
   ## Use this proc to store any type T within the plugin. Data will be accessible
   ## across plugin callbacks but will be invalid after plugin unload.
   ##
   ## Only first call allocates memory. Subsequent calls returns the object already
   ## allocated before.
   ##
-  ## Ensure `freePlgData()` is called to free this memory before plugin unload.
+  ## Ensure `freePluginData()` is called to free this memory before plugin unload.
   ##
   ## .. code-block:: nim
   ##
@@ -290,22 +291,22 @@ proc getPlgData*[T](plg: Plugin): T =
   ##       intField: int
   ##
   ##   pluginLoad:
-  ##     var pData = getPlgData[PlgData](plg)
+  ##     var pData = getPluginData[PlgData](plugin)
   ##     pData.intField = 5
   ##
   ##   pluginTick:
-  ##     var pData = getCtxData[PlgData](plg)
+  ##     var pData = getManagerData[PlgData](plugin)
   ##     pData.intField += 1
-  if plg.pluginData.isNil:
+  if plugin.pluginData.isNil:
     var
       data = new(T)
     GC_ref(data)
-    plg.pluginData = cast[pointer](data)
+    plugin.pluginData = cast[pointer](data)
 
-  result = cast[T](plg.pluginData)
+  result = cast[T](plugin.pluginData)
 
-proc freePlgData*[T](plg: Plugin) =
-  ## Use this proc to free memory allocated within the plugin with `getPlgData()`
+proc freePluginData*[T](plugin: Plugin) =
+  ## Use this proc to free memory allocated within the plugin with `getPluginData()`
   ##
   ## .. code-block:: nim
   ##
@@ -316,15 +317,15 @@ proc freePlgData*[T](plg: Plugin) =
   ##       intField: int
   ##
   ##   pluginUnload:
-  ##     freePlgData[PlgData](plg)
-  if not plg.pluginData.isNil:
+  ##     freePluginData[PlgData](plugin)
+  if not plugin.pluginData.isNil:
     var
-      data = cast[T](plg.pluginData)
+      data = cast[T](plugin.pluginData)
     GC_unref(data)
 
-    plg.pluginData = nil
+    plugin.pluginData = nil
 
-proc getCbResult*(plg: Plugin, command: string): string =
+proc getCbResult*(plugin: Plugin, command: string): string =
   ## Shortcut for running a callback defined in another plugin and getting the first
   ## string value returned
   ##
@@ -332,12 +333,12 @@ proc getCbResult*(plg: Plugin, command: string): string =
   ##
   ##   import plugins/api
   ##
-  ##   proc somecallback(plg: Plugin, cmd: CmdData) {.pluginCallback.} =
+  ##   proc somecallback(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
   ##     var
-  ##       ret = getCbResult(plg, "othercallback param1 param2")
+  ##       ret = getCbResult(plugin, "othercallback param1 param2")
   ##
   ##   # Assume this callback is in another plugin
-  ##   proc othercallback(plg: Plugin, cmd: CmdData) {.pluginCallback.} =
+  ##   proc othercallback(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
   ##     if cmd.params.len != 0:
   ##       var
   ##
@@ -345,18 +346,18 @@ proc getCbResult*(plg: Plugin, command: string): string =
   ##     cmd.returned = @[config.settings[name]]
   var
     cmd = newCmdData(command)
-  plg.ctx.handleCommand(plg.ctx, cmd)
+  plugin.manager.handleCommand(plugin.manager, cmd)
   if not cmd.failed:
     if cmd.returned.len != 0 and cmd.returned[0].len != 0:
       return cmd.returned[0]
 
-proc getCbIntResult*(plg: Plugin, command: string, default = 0): int =
+proc getCbIntResult*(plugin: Plugin, command: string, default = 0): int =
   ## Shortcut for running a callback defined in another plugin and getting the first
   ## integer value returned
   ##
   ## If no value is returned, return the `default` value specified.
   let
-    str = plg.getCbResult(command)
+    str = plugin.getCbResult(command)
 
   try:
     result = parseInt(str)

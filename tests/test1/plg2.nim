@@ -1,6 +1,6 @@
 import plugins/api
 
-proc plg2test(plg: Plugin, cmd: CmdData) {.pluginCallback.} =
+proc plg2test(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
   echo "plg2test: " & cmd.params[0]
   cmd.returned.add "testreturn"
 

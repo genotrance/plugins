@@ -175,68 +175,68 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
               pmonitor[].processed.incl name
               pmonitor[].load.incl &"{dllPath}"
 
-proc unloadPlugin(ctx: Ctx, name: string, force = true) =
-  if ctx.plugins.hasKey(name):
-    if not force and ctx.plugins[name].dependents.len != 0:
+proc unloadPlugin(manager: PluginManager, name: string, force = true) =
+  if manager.plugins.hasKey(name):
+    if not force and manager.plugins[name].dependents.len != 0:
       return
 
-    for dep in ctx.plugins[name].dependents:
-      ctx.notify(ctx, &"Plugin '{dep}' depends on '{name}' and might crash")
+    for dep in manager.plugins[name].dependents:
+      manager.notify(manager, &"Plugin '{dep}' depends on '{name}' and might crash")
 
-    if not ctx.plugins[name].onUnload.isNil:
+    if not manager.plugins[name].onUnload.isNil:
       var
         cmd = new(CmdData)
       tryCatch:
-        ctx.plugins[name].onUnload(ctx.plugins[name], cmd)
+        manager.plugins[name].onUnload(manager.plugins[name], cmd)
       if not ret:
-        ctx.notify(ctx, getCurrentExceptionMsg() & &"Plugin '{name}' crashed in 'pluginUnload()'")
+        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{name}' crashed in 'pluginUnload()'")
       if cmd.failed:
-        ctx.notify(ctx, &"Plugin '{name}' failed in 'pluginUnload()'")
+        manager.notify(manager, &"Plugin '{name}' failed in 'pluginUnload()'")
 
-    ctx.plugins[name].handle.unloadLib()
-    for dep in ctx.plugins[name].depends:
-      if ctx.plugins.hasKey(dep):
-        ctx.plugins[dep].dependents.excl name
-    ctx.plugins[name] = nil
-    ctx.plugins.del(name)
+    manager.plugins[name].handle.unloadLib()
+    for dep in manager.plugins[name].depends:
+      if manager.plugins.hasKey(dep):
+        manager.plugins[dep].dependents.excl name
+    manager.plugins[name] = nil
+    manager.plugins.del(name)
 
-    ctx.notify(ctx, &"Plugin '{name}' unloaded")
+    manager.notify(manager, &"Plugin '{name}' unloaded")
 
-proc notifyPlugins(ctx: Ctx, cmd: CmdData) =
+proc notifyPlugins(manager: PluginManager, cmd: CmdData) =
   let
-    pkeys = toSeq(ctx.plugins.keys())
+    pkeys = toSeq(manager.plugins.keys())
   for pl in pkeys:
     var
-      plg = ctx.plugins[pl]
+      plugin = manager.plugins[pl]
     cmd.failed = false
-    if not plg.onNotify.isNil:
+    if not plugin.onNotify.isNil:
       tryCatch:
-        plg.onNotify(plg, cmd)
+        plugin.onNotify(plugin, cmd)
       if not ret:
-        plg.onNotify = nil
-        ctx.notify(ctx, getCurrentExceptionMsg() & &"Plugin '{plg.name}' crashed in 'pluginNotify()'")
-        ctx.unloadPlugin(plg.name)
+        plugin.onNotify = nil
+        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginNotify()'")
+        manager.unloadPlugin(plugin.name)
       if cmd.failed:
-        ctx.notify(ctx, &"Plugin '{plg.name}' failed in 'pluginNotify()'")
+        manager.notify(manager, &"Plugin '{plugin.name}' failed in 'pluginNotify()'")
 
   echo cmd.params[0]
 
-proc readyPlugins(ctx: Ctx, cmd: CmdData) =
+proc readyPlugins(manager: PluginManager, cmd: CmdData) =
   let
-    pkeys = toSeq(ctx.plugins.keys())
+    pkeys = toSeq(manager.plugins.keys())
   for pl in pkeys:
     var
-      plg = ctx.plugins[pl]
+      plugin = manager.plugins[pl]
     cmd.failed = false
-    if not plg.onReady.isNil:
+    if not plugin.onReady.isNil:
       tryCatch:
-        plg.onReady(plg, cmd)
+        plugin.onReady(plugin, cmd)
       if not ret:
-        plg.onReady = nil
-        ctx.notify(ctx, getCurrentExceptionMsg() & &"Plugin '{plg.name}' crashed in 'pluginReady()'")
-        ctx.unloadPlugin(plg.name)
+        plugin.onReady = nil
+        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginReady()'")
+        manager.unloadPlugin(plugin.name)
       if cmd.failed:
-        ctx.notify(ctx, &"Plugin '{plg.name}' failed in 'pluginReady()'")
+        manager.notify(manager, &"Plugin '{plugin.name}' failed in 'pluginReady()'")
 
 proc getVersion(): string =
   const
@@ -246,7 +246,7 @@ proc getVersion(): string =
   else:
     result ="couldn't determine git hash"
 
-proc handlePluginCommand(ctx: Ctx, cmd: CmdData) =
+proc handlePluginCommand(manager: PluginManager, cmd: CmdData) =
   if cmd.params.len == 0:
     cmd.failed = true
     return
@@ -255,85 +255,85 @@ proc handlePluginCommand(ctx: Ctx, cmd: CmdData) =
     of "plist":
       var
         nf = ""
-      for pl in ctx.plugins.keys():
+      for pl in manager.plugins.keys():
         nf &= pl.extractFilename & " "
-      ctx.notify(ctx, nf)
+      manager.notify(manager, nf)
     of "preload", "pload":
       if cmd.params.len > 1:
-        withLock ctx.pmonitor[].lock:
+        withLock manager.pmonitor[].lock:
           for i in 1 .. cmd.params.len-1:
-            ctx.pmonitor[].processed.excl cmd.params[i]
+            manager.pmonitor[].processed.excl cmd.params[i]
       else:
-        ctx.pmonitor[].processed.clear()
+        manager.pmonitor[].processed.clear()
     of "punload":
       if cmd.params.len > 1:
         for i in 1 .. cmd.params.len-1:
-          if ctx.plugins.hasKey(cmd.params[i]):
-            ctx.unloadPlugin(cmd.params[i])
+          if manager.plugins.hasKey(cmd.params[i]):
+            manager.unloadPlugin(cmd.params[i])
           else:
-            ctx.notify(ctx, &"Plugin '{cmd.params[i]}' not found")
+            manager.notify(manager, &"Plugin '{cmd.params[i]}' not found")
       else:
         let
-          pkeys = toSeq(ctx.plugins.keys())
+          pkeys = toSeq(manager.plugins.keys())
         for pl in pkeys:
-          ctx.unloadPlugin(pl)
+          manager.unloadPlugin(pl)
     of "presume":
-      withLock ctx.pmonitor[].lock:
-        ctx.pmonitor[].run = executing
-      ctx.notify(ctx, &"Plugin monitor resumed")
+      withLock manager.pmonitor[].lock:
+        manager.pmonitor[].run = executing
+      manager.notify(manager, &"Plugin monitor resumed")
     of "ppause":
-      withLock ctx.pmonitor[].lock:
-        ctx.pmonitor[].run = paused
-      ctx.notify(ctx, &"Plugin monitor paused")
+      withLock manager.pmonitor[].lock:
+        manager.pmonitor[].run = paused
+      manager.notify(manager, &"Plugin monitor paused")
     of "pstop":
-      withLock ctx.pmonitor[].lock:
-        ctx.pmonitor[].run = stopped
-      ctx.notify(ctx, &"Plugin monitor exited")
+      withLock manager.pmonitor[].lock:
+        manager.pmonitor[].run = stopped
+      manager.notify(manager, &"Plugin monitor exited")
     else:
       cmd.failed = true
       let
-        pkeys = toSeq(ctx.plugins.keys())
+        pkeys = toSeq(manager.plugins.keys())
       for pl in pkeys:
         var
-          plg = ctx.plugins[pl]
+          plugin = manager.plugins[pl]
           ccmd = new(CmdData)
         ccmd.params = cmd.params[1 .. ^1]
-        if cmd.params[0] in plg.cindex:
+        if cmd.params[0] in plugin.cindex:
           tryCatch:
-            plg.callbacks[cmd.params[0]](plg, ccmd)
+            plugin.callbacks[cmd.params[0]](plugin, ccmd)
           if not ret:
-            ctx.notify(ctx, getCurrentExceptionMsg() & &"Plugin '{plg.name}' crashed in '{cmd.params[0]}()'")
+            manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in '{cmd.params[0]}()'")
           elif ccmd.failed:
-            ctx.notify(ctx, &"Plugin '{plg.name}' failed in '{cmd.params[0]}()'")
+            manager.notify(manager, &"Plugin '{plugin.name}' failed in '{cmd.params[0]}()'")
           else:
             cmd.returned &= ccmd.returned
             cmd.failed = false
           break
 
-proc handleCommand(ctx: Ctx, cmd: CmdData) =
+proc handleCommand(manager: PluginManager, cmd: CmdData) =
   if cmd.params.len != 0:
     case cmd.params[0]:
       of "quit", "exit":
-        ctx.run = stopped
+        manager.run = stopped
       of "notify":
         if cmd.params.len > 1:
-          ctx.notify(ctx, cmd.params[1 .. ^1].join(" "))
+          manager.notify(manager, cmd.params[1 .. ^1].join(" "))
         else:
           cmd.failed = true
       of "version":
-        ctx.notify(ctx,
+        manager.notify(manager,
           &"Plugin {getVersion()}\ncompiled on {CompileDate} {CompileTime} with Nim v{NimVersion}")
       else:
-        ctx.handlePluginCommand(cmd)
+        manager.handlePluginCommand(cmd)
   else:
     cmd.failed = true
 
-proc toCallback(callback: pointer): proc(plg: Plugin, cmd: CmdData) =
+proc toCallback(callback: pointer): proc(plugin: Plugin, cmd: CmdData) =
   if not callback.isNil:
-    result = proc(plg: Plugin, cmd: CmdData) =
-      cast[proc(plg: Plugin, cmd: CmdData) {.cdecl.}](callback)(plg, cmd)
+    result = proc(plugin: Plugin, cmd: CmdData) =
+      cast[proc(plugin: Plugin, cmd: CmdData) {.cdecl.}](callback)(plugin, cmd)
 
-proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): Ctx =
+proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): PluginManager =
   ## Loads all plugins in specified `paths`
   ##
   ## `cmds` is a list of commands to execute after all plugins
@@ -341,7 +341,7 @@ proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): Ctx =
   ##
   ## Returns plugin context that tracks all loaded plugins and
   ## associated data
-  result = new(Ctx)
+  result = new(PluginManager)
 
   result.cli = cmds
   result.handleCommand = handleCommand
@@ -351,201 +351,201 @@ proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): Ctx =
   result.pmonitor[].run = executing
   result.pmonitor[].paths = paths
 
-  result.notify = proc(ctx: Ctx, msg: string) =
+  result.notify = proc(manager: PluginManager, msg: string) =
     var
       cmd = new(CmdData)
     cmd.params.add msg
-    ctx.notifyPlugins(cmd)
+    manager.notifyPlugins(cmd)
 
   createThread(gThread, monitorPlugins, result.pmonitor)
 
-proc initPlugin(plg: Plugin) =
-  if plg.onLoad.isNil:
+proc initPlugin(plugin: Plugin) =
+  if plugin.onLoad.isNil:
     var
       once = false
       cmd: CmdData
 
-    if plg.onDepends.isNil:
+    if plugin.onDepends.isNil:
       once = true
-      plg.onDepends = plg.handle.symAddr("onDepends").toCallback()
+      plugin.onDepends = plugin.handle.symAddr("onDepends").toCallback()
 
-      if not plg.onDepends.isNil:
+      if not plugin.onDepends.isNil:
         cmd = new(CmdData)
         tryCatch:
-          plg.onDepends(plg, cmd)
+          plugin.onDepends(plugin, cmd)
         if not ret:
-          plg.ctx.notify(plg.ctx, getCurrentExceptionMsg() & &"Plugin '{plg.name}' crashed in 'pluginDepends()'")
-          plg.ctx.unloadPlugin(plg.name)
+          plugin.manager.notify(plugin.manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginDepends()'")
+          plugin.manager.unloadPlugin(plugin.name)
           return
         if cmd.failed:
-          plg.ctx.notify(plg.ctx, &"Plugin '{plg.name}' failed in 'pluginDepends()'")
-          plg.ctx.unloadPlugin(plg.name)
+          plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' failed in 'pluginDepends()'")
+          plugin.manager.unloadPlugin(plugin.name)
           return
 
-    for dep in plg.depends:
-      if not plg.ctx.plugins.hasKey(dep):
+    for dep in plugin.depends:
+      if not plugin.manager.plugins.hasKey(dep):
         if once:
-          plg.ctx.notify(plg.ctx, &"Plugin '{plg.name}' dependency '{dep}' not loaded")
+          plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' dependency '{dep}' not loaded")
         return
 
-    plg.onLoad = plg.handle.symAddr("onLoad").toCallback()
-    if plg.onLoad.isNil:
-      plg.ctx.notify(plg.ctx, &"Plugin '{plg.name}' missing 'pluginLoad()'")
-      plg.ctx.unloadPlugin(plg.name)
+    plugin.onLoad = plugin.handle.symAddr("onLoad").toCallback()
+    if plugin.onLoad.isNil:
+      plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' missing 'pluginLoad()'")
+      plugin.manager.unloadPlugin(plugin.name)
     else:
       cmd = new(CmdData)
       tryCatch:
-        plg.onLoad(plg, cmd)
+        plugin.onLoad(plugin, cmd)
       if not ret:
-        plg.ctx.notify(plg.ctx, getCurrentExceptionMsg() & &"Plugin '{plg.name}' crashed in 'pluginLoad()'")
-        plg.ctx.unloadPlugin(plg.name)
+        plugin.manager.notify(plugin.manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginLoad()'")
+        plugin.manager.unloadPlugin(plugin.name)
         return
       if cmd.failed:
-        plg.ctx.notify(plg.ctx, &"Plugin '{plg.name}' failed in 'pluginLoad()'")
-        plg.ctx.unloadPlugin(plg.name)
+        plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' failed in 'pluginLoad()'")
+        plugin.manager.unloadPlugin(plugin.name)
         return
 
-      plg.onUnload = plg.handle.symAddr("onUnload").toCallback()
-      plg.onTick = plg.handle.symAddr("onTick").toCallback()
-      plg.onNotify = plg.handle.symAddr("onNotify").toCallback()
-      plg.onReady = plg.handle.symAddr("onReady").toCallback()
+      plugin.onUnload = plugin.handle.symAddr("onUnload").toCallback()
+      plugin.onTick = plugin.handle.symAddr("onTick").toCallback()
+      plugin.onNotify = plugin.handle.symAddr("onNotify").toCallback()
+      plugin.onReady = plugin.handle.symAddr("onReady").toCallback()
 
-      for cb in plg.cindex:
-        plg.callbacks[cb] = plg.handle.symAddr(cb).toCallback()
-        if plg.callbacks[cb].isNil:
-          plg.ctx.notify(plg.ctx, &"Plugin '{plg.name}' callback '{cb}' failed to load")
-          plg.callbacks.del cb
+      for cb in plugin.cindex:
+        plugin.callbacks[cb] = plugin.handle.symAddr(cb).toCallback()
+        if plugin.callbacks[cb].isNil:
+          plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' callback '{cb}' failed to load")
+          plugin.callbacks.del cb
 
-      for dep in plg.depends:
-        if plg.ctx.plugins.hasKey(dep):
-          plg.ctx.plugins[dep].dependents.incl plg.name
+      for dep in plugin.depends:
+        if plugin.manager.plugins.hasKey(dep):
+          plugin.manager.plugins[dep].dependents.incl plugin.name
 
-      plg.ctx.notify(plg.ctx, &"Plugin '{plg.name}' loaded (" & toSeq(plg.callbacks.keys()).join(", ") & ")")
+      plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' loaded (" & toSeq(plugin.callbacks.keys()).join(", ") & ")")
 
-proc loadPlugin(ctx: Ctx, dllPath: string) =
+proc loadPlugin(manager: PluginManager, dllPath: string) =
   var
-    plg = new(Plugin)
+    plugin = new(Plugin)
 
-  plg.ctx = ctx
-  plg.path =
+  plugin.manager = manager
+  plugin.path =
     if dllPath.splitFile().ext == ".new":
       dllPath[0 .. ^5]
     else:
       dllPath
 
-  plg.name = plg.path.splitFile().name
-  if plg.name.startsWith("lib"):
-    plg.name = plg.name[3 .. ^1]
-  ctx.unloadPlugin(plg.name)
+  plugin.name = plugin.path.splitFile().name
+  if plugin.name.startsWith("lib"):
+    plugin.name = plugin.name[3 .. ^1]
+  manager.unloadPlugin(plugin.name)
 
   if dllPath.splitFile().ext == ".new":
     var
       count = 10
-    while count != 0 and tryRemoveFile(plg.path) == false:
+    while count != 0 and tryRemoveFile(plugin.path) == false:
       sleep(250)
       count -= 1
 
-    if fileExists(plg.path):
-      ctx.notify(ctx, &"Plugin '{plg.name}' failed to unload")
+    if fileExists(plugin.path):
+      manager.notify(manager, &"Plugin '{plugin.name}' failed to unload")
       return
 
     tryCatch:
-      moveFile(dllPath, plg.path)
+      moveFile(dllPath, plugin.path)
     if not ret:
-      ctx.notify(ctx, &"Plugin '{plg.name}' dll copy failed")
+      manager.notify(manager, &"Plugin '{plugin.name}' dll copy failed")
       return
 
-  plg.handle = plg.path.loadLib()
-  plg.dependents.init()
+  plugin.handle = plugin.path.loadLib()
+  plugin.dependents.init()
 
-  if plg.handle.isNil:
-    ctx.notify(ctx, &"Plugin '{plg.name}' failed to load")
+  if plugin.handle.isNil:
+    manager.notify(manager, &"Plugin '{plugin.name}' failed to load")
     return
   else:
-    ctx.plugins[plg.name] = plg
+    manager.plugins[plugin.name] = plugin
 
-    plg.initPlugin()
+    plugin.initPlugin()
 
-proc stopPlugins*(ctx: Ctx) =
+proc stopPlugins*(manager: PluginManager) =
   ## Stops all plugins in the specified context and frees all
   ## associated data
-  withLock ctx.pmonitor[].lock:
-    ctx.pmonitor[].run = stopped
+  withLock manager.pmonitor[].lock:
+    manager.pmonitor[].run = stopped
 
-  while ctx.plugins.len != 0:
+  while manager.plugins.len != 0:
     let
-      pkeys = toSeq(ctx.plugins.keys())
+      pkeys = toSeq(manager.plugins.keys())
     for pl in pkeys:
-      ctx.unloadPlugin(pl, force = false)
+      manager.unloadPlugin(pl, force = false)
 
   gThread.joinThread()
 
-  ctx.pmonitor[].load.clear()
-  ctx.pmonitor[].processed.clear()
+  manager.pmonitor[].load.clear()
+  manager.pmonitor[].processed.clear()
 
-  freeShared(ctx.pmonitor)
+  freeShared(manager.pmonitor)
 
-proc reloadPlugins(ctx: Ctx) =
+proc reloadPlugins(manager: PluginManager) =
   var
     load: OrderedSet[string]
 
-  withLock ctx.pmonitor[].lock:
-    load = ctx.pmonitor[].load
+  withLock manager.pmonitor[].lock:
+    load = manager.pmonitor[].load
 
-    ctx.pmonitor[].load.clear()
+    manager.pmonitor[].load.clear()
 
   for i in load:
     if i.fileExists():
-      ctx.loadPlugin(i)
+      manager.loadPlugin(i)
     else:
-      ctx.notify(ctx, i)
+      manager.notify(manager, i)
 
-  for i in ctx.plugins.keys():
-    if ctx.plugins[i].onLoad.isNil:
-      ctx.plugins[i].initPlugin()
+  for i in manager.plugins.keys():
+    if manager.plugins[i].onLoad.isNil:
+      manager.plugins[i].initPlugin()
 
-proc tickPlugins(ctx: Ctx) =
+proc tickPlugins(manager: PluginManager) =
   let
-    pkeys = toSeq(ctx.plugins.keys())
+    pkeys = toSeq(manager.plugins.keys())
   for pl in pkeys:
     var
-      plg = ctx.plugins[pl]
+      plugin = manager.plugins[pl]
       cmd = new(CmdData)
-    if not plg.onTick.isNil:
+    if not plugin.onTick.isNil:
       tryCatch:
-        plg.onTick(plg, cmd)
+        plugin.onTick(plugin, cmd)
       if not ret:
-        ctx.notify(ctx, getCurrentExceptionMsg() & &"Plugin '{plg.name}' crashed in 'pluginTick()'")
-        ctx.unloadPlugin(plg.name)
+        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginTick()'")
+        manager.unloadPlugin(plugin.name)
       if cmd.failed:
-        ctx.notify(ctx, &"Plugin '{plg.name}' failed in 'pluginTick()'")
+        manager.notify(manager, &"Plugin '{plugin.name}' failed in 'pluginTick()'")
 
-proc handleCli(ctx: Ctx) =
-  if ctx.cli.len != 0:
-    for command in ctx.cli:
+proc handleCli(manager: PluginManager) =
+  if manager.cli.len != 0:
+    for command in manager.cli:
       var
         cmd = newCmdData(command)
-      ctx.handleCommand(ctx, cmd)
-    ctx.cli = @[]
+      manager.handleCommand(manager, cmd)
+    manager.cli = @[]
 
-proc handleReady(ctx: Ctx) =
-  if not ctx.ready:
-    withLock ctx.pmonitor[].lock:
-      if ctx.pmonitor[].ready:
-        ctx.ready = true
+proc handleReady(manager: PluginManager) =
+  if not manager.ready:
+    withLock manager.pmonitor[].lock:
+      if manager.pmonitor[].ready:
+        manager.ready = true
         var
           cmd = new(CmdData)
-        ctx.readyPlugins(cmd)
-        ctx.handleCli()
+        manager.readyPlugins(cmd)
+        manager.handleCli()
 
-proc syncPlugins*(ctx: Ctx) =
+proc syncPlugins*(manager: PluginManager) =
   ## Give plugin system time to process all events
   ##
   ## This should be called in the main application loop
-  ctx.tick += 1
-  if not ctx.ready or ctx.tick == 25:
-    ctx.tick = 0
-    ctx.reloadPlugins()
-    ctx.handleReady()
+  manager.tick += 1
+  if not manager.ready or manager.tick == 25:
+    manager.tick = 0
+    manager.reloadPlugins()
+    manager.handleReady()
 
-  ctx.tickPlugins()
+  manager.tickPlugins()
