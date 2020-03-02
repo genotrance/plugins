@@ -14,16 +14,16 @@ import os, strformat, strutils
 
 let
   flags = "--threads:on -o:html/ --project --index:on"
-  expected = """Plugin 'libplg1' dependency 'libplg2' not loaded
-Plugin 'libplg2' loaded (plg2test)
+  expected = """Plugin 'plg1' dependency 'plg2' not loaded
+Plugin 'plg2' loaded (plg2test)
 Plugin1 loaded
 plg2test: testparam
 Plugin1: testreturn
-Plugin 'libplg1' loaded ()
+Plugin 'plg1' loaded ()
 Plugin1 ready
 Plugin2 ready
-Plugin 'libplg1' unloaded
-Plugin 'libplg2' unloaded"""
+Plugin 'plg1' unloaded
+Plugin 'plg2' unloaded"""
 
 task docs, "Doc generation":
   exec &"nim doc {flags} src/plugins.nim"

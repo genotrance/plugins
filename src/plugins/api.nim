@@ -216,8 +216,7 @@ template pluginDepends*(deps) =
   ##
   ##   pluginDepends(@["plg1", "plg2"])
   proc onDepends*(plg: Plugin, cmd: CmdData) {.exportc, dynlib.} =
-    for dep in deps:
-      plg.depends.add depName(dep)
+    plg.depends.add deps
 
 proc getCtxData*[T](plg: Plugin): T =
   ## Use this proc to store any type T in the global context. Data will persist

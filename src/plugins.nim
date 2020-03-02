@@ -29,7 +29,7 @@
 ##   any callbacks invoked
 ## - `stopPlugins()` which stops the system and unloads cleanly
 
-import dynlib, locks, os, sequtils, sets, strformat, strutils, tables
+import algorithm, dynlib, locks, os, sequtils, sets, strformat, strutils, tables
 
 when not defined(binary):
   import osproc, times
@@ -90,6 +90,7 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
       xPaths: seq[string]
     for path in paths:
       xPaths.add toSeq(walkFiles(path/"*" & ext))
+    xPaths.sort()
 
     withLock pmonitor[].lock:
       case pmonitor[].run
@@ -433,6 +434,8 @@ proc loadPlugin(ctx: Ctx, dllPath: string) =
       dllPath
 
   plg.name = plg.path.splitFile().name
+  if plg.name.startsWith("lib"):
+    plg.name = plg.name[3 .. ^1]
   ctx.unloadPlugin(plg.name)
 
   if dllPath.splitFile().ext == ".new":
