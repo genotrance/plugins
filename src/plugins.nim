@@ -29,7 +29,10 @@
 ##   any callbacks invoked
 ## - `stopPlugins()` which stops the system and unloads cleanly
 
-import dynlib, locks, os, osproc, sequtils, sets, strformat, strutils, tables, times
+import dynlib, locks, os, sequtils, sets, strformat, strutils, tables
+
+when not defined(binary):
+  import osproc, times
 
 include plugins/utils
 
@@ -85,14 +88,14 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
     let
       ext =
         when defined(binary):
-          "dll"
+          DynlibFormat.splitFile().ext
         else:
-          "nim"
+          ".nim"
 
     var
       xPaths: seq[string]
     for path in paths:
-      xPaths.add toSeq(walkFiles(path/"*." & ext))
+      xPaths.add toSeq(walkFiles(path/"*" & ext))
 
     withLock pmonitor[].lock:
       case pmonitor[].run
@@ -177,8 +180,11 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
               pmonitor[].processed.incl name
               pmonitor[].load.incl &"{dllPath}"
 
-proc unloadPlugin(ctx: Ctx, name: string) =
+proc unloadPlugin(ctx: Ctx, name: string, force = true) =
   if ctx.plugins.hasKey(name):
+    if not force and ctx.plugins[name].dependents.len != 0:
+      return
+
     for dep in ctx.plugins[name].dependents:
       ctx.notify(ctx, &"Plugin '{dep}' depends on '{name}' and might crash")
 
@@ -475,7 +481,7 @@ proc stopPlugins*(ctx: Ctx) =
     let
       pkeys = toSeq(ctx.plugins.keys())
     for pl in pkeys:
-      ctx.unloadPlugin(pl)
+      ctx.unloadPlugin(pl, force = false)
 
   gThread.joinThread()
 
