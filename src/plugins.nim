@@ -13,6 +13,11 @@
 ## is handled correctly across multiple threads and plugins. To build in
 ## binary mode, the `-d:binary` flag should be used.
 ##
+## The boehm garbage collector or `libgc` can be installed using the
+## package manager on most Linux distros and on OSX. For Windows, prebuilt
+## 32-bit and 64-bit binaries are available
+## [here](https://bintray.com/beta/#/genotrance/binaries/boehmgc?tab=files).
+##
 ## This module should be imported in the main application. Plugins should
 ## import the `plugins/api` module which provides typical functionality
 ## required by the shared library plugins.

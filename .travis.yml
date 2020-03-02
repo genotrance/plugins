@@ -14,6 +14,10 @@ cache:
   directories:
     - "$HOME/.choosenim"
 
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install libgc; fi
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then curl -L -s "https://bintray.com/genotrance/binaries/download_file?file_path=boehmgc64-stripped.dll" -o tests/boehmgc64.dll; fi
+
 install:
   - curl https://gist.github.com/genotrance/fb53504a4fba88bc5201d3783df5c522/raw/travis.sh -LsSf -o travis.sh
   - source travis.sh

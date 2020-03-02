@@ -7,9 +7,6 @@ pluginLoad:
   plg.ctx.handleCommand(plg.ctx, cmd)
   echo "Plugin1: " & cmd.returned[0]
 
-pluginUnload:
-  echo "Plugin1 unloading"
-
 pluginReady:
   echo "Plugin1 ready"
 

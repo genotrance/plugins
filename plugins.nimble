@@ -35,7 +35,6 @@ Plugin 'libplg1' loaded ()
 Plugin2 ready
 Plugin1 ready
 Plugin 'libplg2' unloaded
-Plugin1 unloading
 Plugin 'libplg1' unloaded"""
 
   exec "nim c tests/tmain"
