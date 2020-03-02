@@ -487,7 +487,7 @@ proc stopPlugins*(ctx: Ctx) =
 
 proc reloadPlugins(ctx: Ctx) =
   var
-    load: HashSet[string]
+    load: OrderedSet[string]
 
   withLock ctx.pmonitor[].lock:
     load = ctx.pmonitor[].load

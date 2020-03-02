@@ -47,7 +47,7 @@ type
     lock: Lock
     run: Run
     paths: seq[string]
-    load: HashSet[string]
+    load: OrderedSet[string]
     processed: HashSet[string]
     ready: bool
 
