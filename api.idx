@@ -1,0 +1,25 @@
+CmdData	api.html#CmdData	api: CmdData	
+Plugin	api.html#Plugin	api: Plugin	
+executing	api.html#executing	Run.executing	
+stopped	api.html#stopped	Run.stopped	
+paused	api.html#paused	Run.paused	
+Run	api.html#Run	api: Run	
+Ctx	api.html#Ctx	api: Ctx	
+newShared	api.html#newShared	api: newShared[T](): ptr T	
+freeShared	api.html#freeShared,ptr.T	api: freeShared[T](s: var ptr T)	
+splitCmd	api.html#splitCmd,string	api: splitCmd(command: string): tuple[name, val: string]	
+newCmdData	api.html#newCmdData,string	api: newCmdData(command: string): CmdData	
+pluginCallback	api.html#pluginCallback.m	api: pluginCallback(body): untyped	
+pluginLoad	api.html#pluginLoad.t,untyped	api: pluginLoad(body: untyped)	
+pluginLoad	api.html#pluginLoad.t	api: pluginLoad()	
+pluginUnload	api.html#pluginUnload.t,untyped	api: pluginUnload(body: untyped)	
+pluginTick	api.html#pluginTick.t,untyped	api: pluginTick(body: untyped)	
+pluginNotify	api.html#pluginNotify.t,untyped	api: pluginNotify(body: untyped)	
+pluginReady	api.html#pluginReady.t,untyped	api: pluginReady(body: untyped)	
+pluginDepends	api.html#pluginDepends.t	api: pluginDepends(deps)	
+getCtxData	api.html#getCtxData,Plugin	api: getCtxData[T](plg: Plugin): T	
+freeCtxData	api.html#freeCtxData,Plugin	api: freeCtxData[T](plg: Plugin)	
+getPlgData	api.html#getPlgData,Plugin	api: getPlgData[T](plg: Plugin): T	
+freePlgData	api.html#freePlgData,Plugin	api: freePlgData[T](plg: Plugin)	
+getCbResult	api.html#getCbResult,Plugin,string	api: getCbResult(plg: Plugin; command: string): string	
+getCbIntResult	api.html#getCbIntResult,Plugin,string,int	api: getCbIntResult(plg: Plugin; command: string; default = 0): int	

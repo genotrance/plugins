@@ -1,0 +1,14 @@
+CmdData	plugins.html#CmdData	plugins: CmdData	
+Plugin	plugins.html#Plugin	plugins: Plugin	
+executing	plugins.html#executing	Run.executing	
+stopped	plugins.html#stopped	Run.stopped	
+paused	plugins.html#paused	Run.paused	
+Run	plugins.html#Run	plugins: Run	
+Ctx	plugins.html#Ctx	plugins: Ctx	
+newShared	plugins.html#newShared	plugins: newShared[T](): ptr T	
+freeShared	plugins.html#freeShared,ptr.T	plugins: freeShared[T](s: var ptr T)	
+splitCmd	plugins.html#splitCmd,string	plugins: splitCmd(command: string): tuple[name, val: string]	
+newCmdData	plugins.html#newCmdData,string	plugins: newCmdData(command: string): CmdData	
+initPlugins	plugins.html#initPlugins,seq[T][string],seq[T][string]	plugins: initPlugins(paths: seq[string]; cmds: seq[string] = @[]): Ctx	
+stopPlugins	plugins.html#stopPlugins,Ctx	plugins: stopPlugins(ctx: Ctx)	
+syncPlugins	plugins.html#syncPlugins,Ctx	plugins: syncPlugins(ctx: Ctx)	
