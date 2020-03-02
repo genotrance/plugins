@@ -10,7 +10,7 @@ proc start*(cmds: seq[string] = @["quit"]) =
     var
       ctx = initPlugins(@[base / path], cmds)
 
-    while ctx.run == executing:
+    while ctx.run != stopped:
       ctx.syncPlugins()
 
     ctx.stopPlugins()

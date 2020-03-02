@@ -10,7 +10,7 @@ srcDir        = "src"
 
 requires "nim >= 0.20.2"
 
-import strformat
+import os, strformat, strutils
 
 let
   flags = "--threads:on -o:html/ --project --index:on"
@@ -20,10 +20,10 @@ Plugin1 loaded
 plg2test: testparam
 Plugin1: testreturn
 Plugin 'libplg1' loaded ()
-Plugin2 ready
 Plugin1 ready
-Plugin 'libplg2' unloaded
-Plugin 'libplg1' unloaded"""
+Plugin2 ready
+Plugin 'libplg1' unloaded
+Plugin 'libplg2' unloaded"""
 
 task docs, "Doc generation":
   exec &"nim doc {flags} src/plugins.nim"
@@ -34,19 +34,29 @@ task docsPublish, "Doc generation and publish":
   docsTask()
   exec "ghp-import --no-jekyll -fp html"
 
+task clean, "Clean up":
+  rmFile("tests/tmain" & ExeExt)
+  let
+    dlext = DynlibFormat.splitFile().ext
+  for file in listFiles("tests/test1"):
+    if file.splitFile().ext == dlext:
+      rmFile(file)
+  rmDir("html")
+
 task test, "Test all":
+  cleanTask()
   for mode in ["", "-d:binary"]:
     exec &"nim c {mode} tests/tmain"
     let (outp, errC) = gorgeEx("./tests/tmain quit")
-    doAssert outp == expected and errC == 0, &"""
+    doAssert outp.strip() == expected and errC == 0, &"""
 
-  Expected:
-  {expected}
+Expected:
+{expected}
 
-  Output:
-  {outp}
+Output:
+{outp}
 
-  Error: {errC}
-  """
+Error: {errC}
+"""
 
   docsTask()

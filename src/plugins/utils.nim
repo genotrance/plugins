@@ -25,3 +25,12 @@ proc newCmdData*(command: string): CmdData =
   ## and stored in CmdData.params for processing by receiving callback
   result = new(CmdData)
   result.params = command.parseCmdLine()
+
+proc dllName(sourcePath: string): string =
+  let
+    (dir, name, _) = sourcePath.splitFile()
+
+  result = dir / (DynlibFormat % name)
+
+proc depName(name: string): string {.used.} =
+  result = dllName(name).splitFile().name

@@ -49,12 +49,6 @@ template tryCatch(body: untyped) {.dirty.} =
     when not defined(release):
       raise getCurrentException()
 
-proc dll(sourcePath: string): string =
-  let
-    (dir, name, _) = sourcePath.splitFile()
-
-  result = dir / (DynlibFormat % name)
-
 when not defined(binary):
   proc sourceChanged(sourcePath, dllPath: string): bool =
     let
@@ -143,7 +137,7 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
     else:
       for sourcePath in xPaths:
         let
-          dllPath = sourcePath.dll
+          dllPath = dllName(sourcePath)
           dllPathNew = dllPath & ".new"
           name = sourcePath.splitFile().name
 
@@ -388,8 +382,6 @@ proc initPlugin(plg: Plugin) =
           return
 
     for dep in plg.depends:
-      let
-        dep = dll(dep).splitFile().name
       if not plg.ctx.plugins.hasKey(dep):
         if once:
           plg.ctx.notify(plg.ctx, &"Plugin '{plg.name}' dependency '{dep}' not loaded")

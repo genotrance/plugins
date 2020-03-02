@@ -64,5 +64,5 @@ type
 
     tick*: int
     pmonitor*: ptr PluginMonitor
-    plugins*: Table[string, Plugin]
+    plugins*: OrderedTable[string, Plugin]
     pluginData*: Table[string, pointer]
