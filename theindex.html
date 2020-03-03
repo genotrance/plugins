@@ -79,25 +79,19 @@ function main() {
           <li><a class="reference external"
           data-doc-search-tag="plugins: CmdData" href="plugins.html#CmdData">plugins: CmdData</a></li>
           </ul></dd>
-<dt><a name="Ctx" href="#Ctx"><span>Ctx:</span></a></dt><dd><ul class="simple">
-<li><a class="reference external"
-          data-doc-search-tag="api: Ctx" href="api.html#Ctx">api: Ctx</a></li>
-          <li><a class="reference external"
-          data-doc-search-tag="plugins: Ctx" href="plugins.html#Ctx">plugins: Ctx</a></li>
-          </ul></dd>
 <dt><a name="executing" href="#executing"><span>executing:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="Run.executing" href="api.html#executing">Run.executing</a></li>
           <li><a class="reference external"
           data-doc-search-tag="Run.executing" href="plugins.html#executing">Run.executing</a></li>
           </ul></dd>
-<dt><a name="freeCtxData" href="#freeCtxData"><span>freeCtxData:</span></a></dt><dd><ul class="simple">
+<dt><a name="freeManagerData" href="#freeManagerData"><span>freeManagerData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: freeCtxData[T](plg: Plugin)" href="api.html#freeCtxData%2CPlugin">api: freeCtxData[T](plg: Plugin)</a></li>
+          data-doc-search-tag="api: freeManagerData[T](plugin: Plugin)" href="api.html#freeManagerData%2CPlugin">api: freeManagerData[T](plugin: Plugin)</a></li>
           </ul></dd>
-<dt><a name="freePlgData" href="#freePlgData"><span>freePlgData:</span></a></dt><dd><ul class="simple">
+<dt><a name="freePluginData" href="#freePluginData"><span>freePluginData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: freePlgData[T](plg: Plugin)" href="api.html#freePlgData%2CPlugin">api: freePlgData[T](plg: Plugin)</a></li>
+          data-doc-search-tag="api: freePluginData[T](plugin: Plugin)" href="api.html#freePluginData%2CPlugin">api: freePluginData[T](plugin: Plugin)</a></li>
           </ul></dd>
 <dt><a name="freeShared" href="#freeShared"><span>freeShared:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -107,23 +101,23 @@ function main() {
           </ul></dd>
 <dt><a name="getCbIntResult" href="#getCbIntResult"><span>getCbIntResult:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: getCbIntResult(plg: Plugin; command: string; default = 0): int" href="api.html#getCbIntResult%2CPlugin%2Cstring%2Cint">api: getCbIntResult(plg: Plugin; command: string; default = 0): int</a></li>
+          data-doc-search-tag="api: getCbIntResult(plugin: Plugin; command: string; default = 0): int" href="api.html#getCbIntResult%2CPlugin%2Cstring%2Cint">api: getCbIntResult(plugin: Plugin; command: string; default = 0): int</a></li>
           </ul></dd>
 <dt><a name="getCbResult" href="#getCbResult"><span>getCbResult:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: getCbResult(plg: Plugin; command: string): string" href="api.html#getCbResult%2CPlugin%2Cstring">api: getCbResult(plg: Plugin; command: string): string</a></li>
+          data-doc-search-tag="api: getCbResult(plugin: Plugin; command: string): string" href="api.html#getCbResult%2CPlugin%2Cstring">api: getCbResult(plugin: Plugin; command: string): string</a></li>
           </ul></dd>
-<dt><a name="getCtxData" href="#getCtxData"><span>getCtxData:</span></a></dt><dd><ul class="simple">
+<dt><a name="getManagerData" href="#getManagerData"><span>getManagerData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: getCtxData[T](plg: Plugin): T" href="api.html#getCtxData%2CPlugin">api: getCtxData[T](plg: Plugin): T</a></li>
+          data-doc-search-tag="api: getManagerData[T](plugin: Plugin): T" href="api.html#getManagerData%2CPlugin">api: getManagerData[T](plugin: Plugin): T</a></li>
           </ul></dd>
-<dt><a name="getPlgData" href="#getPlgData"><span>getPlgData:</span></a></dt><dd><ul class="simple">
+<dt><a name="getPluginData" href="#getPluginData"><span>getPluginData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: getPlgData[T](plg: Plugin): T" href="api.html#getPlgData%2CPlugin">api: getPlgData[T](plg: Plugin): T</a></li>
+          data-doc-search-tag="api: getPluginData[T](plugin: Plugin): T" href="api.html#getPluginData%2CPlugin">api: getPluginData[T](plugin: Plugin): T</a></li>
           </ul></dd>
 <dt><a name="initPlugins" href="#initPlugins"><span>initPlugins:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="plugins: initPlugins(paths: seq[string]; cmds: seq[string] = @[]): Ctx" href="plugins.html#initPlugins%2Cseq%5BT%5D%5Bstring%5D%2Cseq%5BT%5D%5Bstring%5D">plugins: initPlugins(paths: seq[string]; cmds: seq[string] = @[]): Ctx</a></li>
+          data-doc-search-tag="plugins: initPlugins(paths: seq[string]; cmds: seq[string] = @[]): PluginManager" href="plugins.html#initPlugins%2Cseq%5BT%5D%5Bstring%5D%2Cseq%5BT%5D%5Bstring%5D">plugins: initPlugins(paths: seq[string]; cmds: seq[string] = @[]): PluginManager</a></li>
           </ul></dd>
 <dt><a name="newCmdData" href="#newCmdData"><span>newCmdData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -163,6 +157,12 @@ function main() {
           <li><a class="reference external"
           data-doc-search-tag="api: pluginLoad(body: untyped)" href="api.html#pluginLoad.t%2Cuntyped">api: pluginLoad(body: untyped)</a></li>
           </ul></dd>
+<dt><a name="PluginManager" href="#PluginManager"><span>PluginManager:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: PluginManager" href="api.html#PluginManager">api: PluginManager</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: PluginManager" href="plugins.html#PluginManager">plugins: PluginManager</a></li>
+          </ul></dd>
 <dt><a name="pluginNotify" href="#pluginNotify"><span>pluginNotify:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="api: pluginNotify(body: untyped)" href="api.html#pluginNotify.t%2Cuntyped">api: pluginNotify(body: untyped)</a></li>
@@ -199,18 +199,18 @@ function main() {
           </ul></dd>
 <dt><a name="stopPlugins" href="#stopPlugins"><span>stopPlugins:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="plugins: stopPlugins(ctx: Ctx)" href="plugins.html#stopPlugins%2CCtx">plugins: stopPlugins(ctx: Ctx)</a></li>
+          data-doc-search-tag="plugins: stopPlugins(manager: PluginManager)" href="plugins.html#stopPlugins%2CPluginManager">plugins: stopPlugins(manager: PluginManager)</a></li>
           </ul></dd>
 <dt><a name="syncPlugins" href="#syncPlugins"><span>syncPlugins:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="plugins: syncPlugins(ctx: Ctx)" href="plugins.html#syncPlugins%2CCtx">plugins: syncPlugins(ctx: Ctx)</a></li>
+          data-doc-search-tag="plugins: syncPlugins(manager: PluginManager)" href="plugins.html#syncPlugins%2CPluginManager">plugins: syncPlugins(manager: PluginManager)</a></li>
           </ul></dd>
 </dl>
     <div class="row">
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2020-03-02 00:21:46 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2020-03-03 00:12:53 UTC</small>
       </div>
     </div>
   </div>

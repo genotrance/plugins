@@ -4,7 +4,7 @@ executing	api.html#executing	Run.executing
 stopped	api.html#stopped	Run.stopped	
 paused	api.html#paused	Run.paused	
 Run	api.html#Run	api: Run	
-Ctx	api.html#Ctx	api: Ctx	
+PluginManager	api.html#PluginManager	api: PluginManager	
 newShared	api.html#newShared	api: newShared[T](): ptr T	
 freeShared	api.html#freeShared,ptr.T	api: freeShared[T](s: var ptr T)	
 splitCmd	api.html#splitCmd,string	api: splitCmd(command: string): tuple[name, val: string]	
@@ -17,9 +17,9 @@ pluginTick	api.html#pluginTick.t,untyped	api: pluginTick(body: untyped)
 pluginNotify	api.html#pluginNotify.t,untyped	api: pluginNotify(body: untyped)	
 pluginReady	api.html#pluginReady.t,untyped	api: pluginReady(body: untyped)	
 pluginDepends	api.html#pluginDepends.t	api: pluginDepends(deps)	
-getCtxData	api.html#getCtxData,Plugin	api: getCtxData[T](plg: Plugin): T	
-freeCtxData	api.html#freeCtxData,Plugin	api: freeCtxData[T](plg: Plugin)	
-getPlgData	api.html#getPlgData,Plugin	api: getPlgData[T](plg: Plugin): T	
-freePlgData	api.html#freePlgData,Plugin	api: freePlgData[T](plg: Plugin)	
-getCbResult	api.html#getCbResult,Plugin,string	api: getCbResult(plg: Plugin; command: string): string	
-getCbIntResult	api.html#getCbIntResult,Plugin,string,int	api: getCbIntResult(plg: Plugin; command: string; default = 0): int	
+getManagerData	api.html#getManagerData,Plugin	api: getManagerData[T](plugin: Plugin): T	
+freeManagerData	api.html#freeManagerData,Plugin	api: freeManagerData[T](plugin: Plugin)	
+getPluginData	api.html#getPluginData,Plugin	api: getPluginData[T](plugin: Plugin): T	
+freePluginData	api.html#freePluginData,Plugin	api: freePluginData[T](plugin: Plugin)	
+getCbResult	api.html#getCbResult,Plugin,string	api: getCbResult(plugin: Plugin; command: string): string	
+getCbIntResult	api.html#getCbIntResult,Plugin,string,int	api: getCbIntResult(plugin: Plugin; command: string; default = 0): int	
