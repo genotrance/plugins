@@ -52,7 +52,7 @@ type
     ready: bool
 
   PluginManager* = ref object
-    ## Global context of all loaded plugins and callbacks
+    ## Manager of all loaded plugins and callbacks
     run*: Run                   ## State of system
     ready*: bool                ## True when all plugins are loaded
     cli*: seq[string]           ## Commands to run when system is ready

@@ -339,7 +339,7 @@ proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): PluginManager =
   ## `cmds` is a list of commands to execute after all plugins
   ## are successfully loaded and system is ready
   ##
-  ## Returns plugin context that tracks all loaded plugins and
+  ## Returns plugin manager that tracks all loaded plugins and
   ## associated data
   result = new(PluginManager)
 
@@ -467,7 +467,7 @@ proc loadPlugin(manager: PluginManager, dllPath: string) =
     plugin.initPlugin()
 
 proc stopPlugins*(manager: PluginManager) =
-  ## Stops all plugins in the specified context and frees all
+  ## Stops all plugins in the specified manager and frees all
   ## associated data
   withLock manager.pmonitor[].lock:
     manager.pmonitor[].run = stopped

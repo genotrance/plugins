@@ -220,7 +220,7 @@ template pluginDepends*(deps) =
     plugin.depends.add deps
 
 proc getManagerData*[T](plugin: Plugin): T =
-  ## Use this proc to store any type T in the global context. Data will persist
+  ## Use this proc to store any type T in the plugin manager. Data will persist
   ## across plugin unload/reload and can be used to store information that
   ## requires such persistence.
   ##
@@ -253,7 +253,7 @@ proc getManagerData*[T](plugin: Plugin): T =
   result = cast[T](plugin.manager.pluginData[plugin.name])
 
 proc freeManagerData*[T](plugin: Plugin) =
-  ## Use this proc to free memory allocated in the global context with `getManagerData()`
+  ## Use this proc to free memory allocated in the plugin manager with `getManagerData()`
   ##
   ## .. code-block:: nim
   ##
