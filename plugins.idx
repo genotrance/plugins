@@ -7,8 +7,29 @@ Run	plugins.html#Run	plugins: Run
 PluginManager	plugins.html#PluginManager	plugins: PluginManager	
 newShared	plugins.html#newShared	plugins: newShared[T](): ptr T	
 freeShared	plugins.html#freeShared,ptr.T	plugins: freeShared[T](s: var ptr T)	
+getManagerData	plugins.html#getManagerData,Plugin	plugins: getManagerData[T](plugin: Plugin): T	
+freeManagerData	plugins.html#freeManagerData,Plugin	plugins: freeManagerData[T](plugin: Plugin)	
+getPluginData	plugins.html#getPluginData,Plugin	plugins: getPluginData[T](plugin: Plugin): T	
+freePluginData	plugins.html#freePluginData,Plugin	plugins: freePluginData[T](plugin: Plugin)	
 splitCmd	plugins.html#splitCmd,string	plugins: splitCmd(command: string): tuple[name, val: string]	
 newCmdData	plugins.html#newCmdData,string	plugins: newCmdData(command: string): CmdData	
+getVersion	plugins.html#getVersion	plugins: getVersion(): string	
+getVersionBanner	plugins.html#getVersionBanner	plugins: getVersionBanner(): string	
+quit	plugins.html#quit,PluginManager	plugins: quit(manager: PluginManager)	
+notify	plugins.html#notify,PluginManager,string	plugins: notify(manager: PluginManager; msg: string)	
+plist	plugins.html#plist,PluginManager	plugins: plist(manager: PluginManager): seq[string]	
+pload	plugins.html#pload,PluginManager,CmdData	plugins: pload(manager: PluginManager; cmd: CmdData)	
+punload	plugins.html#punload,PluginManager,CmdData	plugins: punload(manager: PluginManager; cmd: CmdData)	
+presume	plugins.html#presume,PluginManager	plugins: presume(manager: PluginManager)	
+ppause	plugins.html#ppause,PluginManager	plugins: ppause(manager: PluginManager)	
+pstop	plugins.html#pstop,PluginManager	plugins: pstop(manager: PluginManager)	
+getPlugin	plugins.html#getPlugin,PluginManager,string	plugins: getPlugin(manager: PluginManager; name: string): Plugin	
+getCallback	plugins.html#getCallback,PluginManager,string,string	plugins: getCallback(manager: PluginManager; pname, callback: string): proc (plugin: Plugin;\n    cmd: CmdData)	
+call	plugins.html#call,PluginManager,string,CmdData	plugins: call(manager: PluginManager; callback: string; cmd: CmdData)	
+callPlugin	plugins.html#callPlugin,PluginManager,string,string,CmdData	plugins: callPlugin(manager: PluginManager; pname, callback: string; cmd: CmdData)	
+callCommand	plugins.html#callCommand,PluginManager,CmdData	plugins: callCommand(manager: PluginManager; cmd: CmdData)	
+getCommandResult	plugins.html#getCommandResult,PluginManager,string	plugins: getCommandResult(manager: PluginManager; command: string): seq[string]	
+getCommandIntResult	plugins.html#getCommandIntResult,PluginManager,string,int	plugins: getCommandIntResult(manager: PluginManager; command: string; default = 0): seq[int]	
 initPlugins	plugins.html#initPlugins,seq[T][string],seq[T][string]	plugins: initPlugins(paths: seq[string]; cmds: seq[string] = @[]): PluginManager	
 stopPlugins	plugins.html#stopPlugins,PluginManager	plugins: stopPlugins(manager: PluginManager)	
 syncPlugins	plugins.html#syncPlugins,PluginManager	plugins: syncPlugins(manager: PluginManager)	

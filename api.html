@@ -115,11 +115,11 @@ function main() {
   name*: string                ## Name of the plugin
   path: string
   handle: LibHandle
-  depends*: seq[string]        ## Plugins this plugin depends on
+  depends: seq[string]         ## Plugins this plugin depends on
   dependents: HashSet[string]  ## Plugins that depend on this plugin
-  pluginData*: pointer         ## Pointer to store any type T within plugin to make
-                     ## data accessible across all callbacks within plugin
-                     ## Used by `getPluginData()` and `freePluginData()`
+  pluginData: pointer          ## Pointer to store any type T within plugin to make
+                    ## data accessible across all callbacks within plugin
+                    ## Used by `getPluginData()` and `freePluginData()`
   onDepends: proc (plugin: Plugin; cmd: CmdData)
   onLoad: proc (plugin: Plugin; cmd: CmdData)
   onUnload: proc (plugin: Plugin; cmd: CmdData)
@@ -136,14 +136,11 @@ function main() {
   run*: Run                    ## State of system
   ready*: bool                 ## True when all plugins are loaded
   cli*: seq[string]            ## Commands to run when system is ready
-  notify*: proc (manager: PluginManager; msg: string) ## Callback to invoke `pluginNotify()` across
-                                                ## all plugins
-  handleCommand*: proc (manager: PluginManager; cmd: CmdData) {.nimcall.} ## Invoke callback by name across all loaded
-                                                                   ## plugins
-  tick*: int
-  pmonitor*: ptr PluginMonitor
-  plugins*: OrderedTable[string, Plugin]
-  pluginData*: Table[string, pointer]"><wbr />Plugin<wbr />Manager<span class="attachedType"></span></a></li>
+  tick: int
+  pmonitor: ptr PluginMonitor
+  plugins: OrderedTable[string, Plugin]
+  pluginData: Table[string, pointer]
+  callbacks: Table[string, pointer]"><wbr />Plugin<wbr />Manager<span class="attachedType"></span></a></li>
 
   </ul>
 </li>
@@ -154,10 +151,6 @@ function main() {
     title="newShared[T](): ptr T"><wbr />new<wbr />Shared<span class="attachedType"></span></a></li>
   <li><a class="reference" href="#freeShared%2Cptr.T"
     title="freeShared[T](s: var ptr T)"><wbr />free<wbr />Shared<span class="attachedType"></span></a></li>
-  <li><a class="reference" href="#splitCmd%2Cstring"
-    title="splitCmd(command: string): tuple[name, val: string]"><wbr />split<wbr />Cmd<span class="attachedType"></span></a></li>
-  <li><a class="reference" href="#newCmdData%2Cstring"
-    title="newCmdData(command: string): CmdData"><wbr />new<wbr />Cmd<wbr />Data<span class="attachedType">CmdData</span></a></li>
   <li><a class="reference" href="#getManagerData%2CPlugin"
     title="getManagerData[T](plugin: Plugin): T"><wbr />get<wbr />Manager<wbr />Data<span class="attachedType">Plugin</span></a></li>
   <li><a class="reference" href="#freeManagerData%2CPlugin"
@@ -166,10 +159,45 @@ function main() {
     title="getPluginData[T](plugin: Plugin): T"><wbr />get<wbr />Plugin<wbr />Data<span class="attachedType">Plugin</span></a></li>
   <li><a class="reference" href="#freePluginData%2CPlugin"
     title="freePluginData[T](plugin: Plugin)"><wbr />free<wbr />Plugin<wbr />Data<span class="attachedType">Plugin</span></a></li>
-  <li><a class="reference" href="#getCbResult%2CPlugin%2Cstring"
-    title="getCbResult(plugin: Plugin; command: string): string"><wbr />get<wbr />Cb<wbr />Result<span class="attachedType">Plugin</span></a></li>
-  <li><a class="reference" href="#getCbIntResult%2CPlugin%2Cstring%2Cint"
-    title="getCbIntResult(plugin: Plugin; command: string; default = 0): int"><wbr />get<wbr />Cb<wbr />Int<wbr />Result<span class="attachedType">Plugin</span></a></li>
+  <li><a class="reference" href="#splitCmd%2Cstring"
+    title="splitCmd(command: string): tuple[name, val: string]"><wbr />split<wbr />Cmd<span class="attachedType"></span></a></li>
+  <li><a class="reference" href="#newCmdData%2Cstring"
+    title="newCmdData(command: string): CmdData"><wbr />new<wbr />Cmd<wbr />Data<span class="attachedType">CmdData</span></a></li>
+  <li><a class="reference" href="#getVersion"
+    title="getVersion(): string"><wbr />get<wbr />Version<span class="attachedType"></span></a></li>
+  <li><a class="reference" href="#getVersionBanner"
+    title="getVersionBanner(): string"><wbr />get<wbr />Version<wbr />Banner<span class="attachedType"></span></a></li>
+  <li><a class="reference" href="#quit%2CPluginManager"
+    title="quit(manager: PluginManager)"><wbr />quit<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#notify%2CPluginManager%2Cstring"
+    title="notify(manager: PluginManager; msg: string)"><wbr />notify<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#plist%2CPluginManager"
+    title="plist(manager: PluginManager): seq[string]"><wbr />plist<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#pload%2CPluginManager%2CCmdData"
+    title="pload(manager: PluginManager; cmd: CmdData)"><wbr />pload<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#punload%2CPluginManager%2CCmdData"
+    title="punload(manager: PluginManager; cmd: CmdData)"><wbr />punload<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#presume%2CPluginManager"
+    title="presume(manager: PluginManager)"><wbr />presume<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#ppause%2CPluginManager"
+    title="ppause(manager: PluginManager)"><wbr />ppause<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#pstop%2CPluginManager"
+    title="pstop(manager: PluginManager)"><wbr />pstop<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#getPlugin%2CPluginManager%2Cstring"
+    title="getPlugin(manager: PluginManager; name: string): Plugin"><wbr />get<wbr />Plugin<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#getCallback%2CPluginManager%2Cstring%2Cstring"
+    title="getCallback(manager: PluginManager; pname, callback: string): proc (plugin: Plugin;
+    cmd: CmdData)"><wbr />get<wbr />Callback<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#call%2CPluginManager%2Cstring%2CCmdData"
+    title="call(manager: PluginManager; callback: string; cmd: CmdData)"><wbr />call<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#callPlugin%2CPluginManager%2Cstring%2Cstring%2CCmdData"
+    title="callPlugin(manager: PluginManager; pname, callback: string; cmd: CmdData)"><wbr />call<wbr />Plugin<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#callCommand%2CPluginManager%2CCmdData"
+    title="callCommand(manager: PluginManager; cmd: CmdData)"><wbr />call<wbr />Command<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#getCommandResult%2CPluginManager%2Cstring"
+    title="getCommandResult(manager: PluginManager; command: string): seq[string]"><wbr />get<wbr />Command<wbr />Result<span class="attachedType">PluginManager</span></a></li>
+  <li><a class="reference" href="#getCommandIntResult%2CPluginManager%2Cstring%2Cint"
+    title="getCommandIntResult(manager: PluginManager; command: string; default = 0): seq[int]"><wbr />get<wbr />Command<wbr />Int<wbr />Result<span class="attachedType">PluginManager</span></a></li>
 
   </ul>
 </li>
@@ -217,38 +245,33 @@ function main() {
 <p>Optional definitions are:</p>
 <ul class="simple"><li><tt class="docutils literal"><span class="pre">pluginUnload()</span></tt> which gets called before the plugin is unloaded</li>
 <li><tt class="docutils literal"><span class="pre">pluginTick()</span></tt> which gets called every time <tt class="docutils literal"><span class="pre">syncPlugins()</span></tt> runs</li>
-<li><dl class="docutils"><dt><tt class="docutils literal"><span class="pre">pluginNotify()</span></tt> which gets called when <tt class="docutils literal"><span class="pre">PluginManager.notify()</span></tt></dt>
-<dd>is called</dd>
-</dl>
-</li>
-<li><dl class="docutils"><dt><tt class="docutils literal"><span class="pre">pluginReady()</span></tt> which gets called when all plugins are loaded and</dt>
-<dd>system is ready</dd>
-</dl>
-</li>
-<li><dl class="docutils"><dt><tt class="docutils literal"><span class="pre">pluginDepends()</span></tt> which should be used when a plugin depends on</dt>
-<dd>other plugins being loaded</dd>
-</dl>
-</li>
+<li><tt class="docutils literal"><span class="pre">pluginNotify()</span></tt> which gets called when <tt class="docutils literal"><span class="pre">PluginManager.notify()</span></tt> is called</li>
+<li><tt class="docutils literal"><span class="pre">pluginReady()</span></tt> which gets called when all plugins are loaded and system is ready</li>
+<li><tt class="docutils literal"><span class="pre">pluginDepends()</span></tt> which should be used when a plugin depends on other plugins being loaded</li>
 </ul>
 <p>Plugins can choose to use any combination of these optional definitions depending on the use case.</p>
 <p>In addition, plugins can define custom callbacks by using the <tt class="docutils literal"><span class="pre">{.pluginCallback.}</span></tt> pragma.</p>
-<p>Custom callbacks can be invoked with <tt class="docutils literal"><span class="pre">PluginManager.handleCommand()</span></tt>. The callback name and params should be populated correctly in the <tt class="docutils literal"><span class="pre">CmdData.params</span></tt> and return values if any should be populated by the callback in <tt class="docutils literal"><span class="pre">CmdData.returned</span></tt>. Both these are <tt class="docutils literal"><span class="pre">string</span></tt> types so a <tt class="docutils literal"><span class="pre">pointer</span></tt> type <tt class="docutils literal"><span class="pre">CmdData.pparams</span></tt> and <tt class="docutils literal"><span class="pre">CmdData.preturned</span></tt> are available for other types of data. In addition, callbacks should set <tt class="docutils literal"><span class="pre">CmdData.failed</span></tt> to <tt class="docutils literal"><span class="pre">true</span></tt> if the callback has failed to notify the caller.</p>
-<p>The <tt class="docutils literal"><span class="pre">newCmdData()</span></tt>, <tt class="docutils literal"><span class="pre">getCbResult()</span></tt> and <tt class="docutils literal"><span class="pre">getCbIntResult()</span></tt> procs are available to simplify invoking callbacks and getting return values.</p>
+<p>Custom callbacks can be invoked with the <tt class="docutils literal"><span class="pre">callCommand()</span></tt> proc. The callback name and params should be populated correctly in the <tt class="docutils literal"><span class="pre">CmdData.params</span></tt>. This approach is useful if the callback needs to be invoked as a string like if it were provided by user input.</p>
+<p>In addition, the <tt class="docutils literal"><span class="pre">call()</span></tt> and <tt class="docutils literal"><span class="pre">callPlugin()</span></tt> procs are also available to invoke custom callbacks directly without having to pass the callback name in <tt class="docutils literal"><span class="pre">CmdData</span></tt>. Lastly, the <tt class="docutils literal"><span class="pre">getPlugin()</span></tt> and <tt class="docutils literal"><span class="pre">getCallback()</span></tt> procs allow invoking callbacks like regular code.</p>
+<p>Return values if any can be populated by the callback in <tt class="docutils literal"><span class="pre">CmdData.returned</span></tt> which, along with <tt class="docutils literal"><span class="pre">CmdData.params</span></tt>, are <tt class="docutils literal"><span class="pre">string</span></tt> types so a <tt class="docutils literal"><span class="pre">pointer</span></tt> type <tt class="docutils literal"><span class="pre">CmdData.pparams</span></tt> and <tt class="docutils literal"><span class="pre">CmdData.preturned</span></tt> are also available for other types of data. In addition, callbacks should set <tt class="docutils literal"><span class="pre">CmdData.failed</span></tt> to <tt class="docutils literal"><span class="pre">true</span></tt> if the callback has failed in order to notify the caller.</p>
+<p>The <tt class="docutils literal"><span class="pre">newCmdData()</span></tt>, <tt class="docutils literal"><span class="pre">getCommandResult()</span></tt> and <tt class="docutils literal"><span class="pre">getCommandIntResult()</span></tt> procs are available to simplify invoking callbacks and getting return values.</p>
 <p>Callbacks should ensure they check input params and returned values for validity.</p>
 <p>The <tt class="docutils literal"><span class="pre">getManagerData()</span></tt> and <tt class="docutils literal"><span class="pre">getPluginData()</span></tt> procs enable storage of global and plugin local data so that it is accessible from any plugin.</p>
-<p>The following global callbacks are available:</p>
-<ul class="simple"><li><tt class="docutils literal"><span class="pre">notify xxx</span></tt> - invoke <tt class="docutils literal"><span class="pre">PluginManager.notify()</span></tt> with param <tt class="docutils literal"><span class="pre">xxx</span></tt></li>
-<li><tt class="docutils literal"><span class="pre">version</span></tt> - get version information of plugin</li>
-<li><tt class="docutils literal"><span class="pre">quit | exit</span></tt> - stop and unload the plugin system</li>
+<p>The following additional procs are available:</p>
+<ul class="simple"><li><tt class="docutils literal"><span class="pre">notify(xxx)</span></tt> - invoke <tt class="docutils literal"><span class="pre">pluginNotify()</span></tt> across all plugins with param <tt class="docutils literal"><span class="pre">xxx</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">getVersion()</span></tt> - get git version hash of main application</li>
+<li><tt class="docutils literal"><span class="pre">getVersionBanner()</span></tt> - get git and Nim compiler version of main application</li>
+<li><tt class="docutils literal"><span class="pre">quit()</span></tt> - stop and unload the plugin system</li>
 </ul>
-<p>For plugins, the following callbacks are available:</p>
-<ul class="simple"><li><tt class="docutils literal"><span class="pre">plist</span></tt> - list all loaded plugins</li>
-<li><tt class="docutils literal"><span class="pre">pload | preload [xxx]</span></tt> - (re)load specific or all plugins</li>
-<li><tt class="docutils literal"><span class="pre">punload [xxx]</span></tt> - unload specific or all plugins</li>
-<li><tt class="docutils literal"><span class="pre">ppause</span></tt> - pause the plugin monitor - changes will not reload plugins</li>
-<li><tt class="docutils literal"><span class="pre">presume</span></tt> - resume plugin monitor</li>
-<li><tt class="docutils literal"><span class="pre">pstop</span></tt> - stop and unload all plugins</li>
+<p>The following plugin system specific procs are available:</p>
+<ul class="simple"><li><tt class="docutils literal"><span class="pre">plist()</span></tt> - list all loaded plugins</li>
+<li><tt class="docutils literal"><span class="pre">pload([xxx])</span></tt> - (re)load specific or all plugins</li>
+<li><tt class="docutils literal"><span class="pre">punload([xxx])</span></tt> - unload specific or all plugins</li>
+<li><tt class="docutils literal"><span class="pre">ppause()</span></tt> - pause the plugin monitor - will not reload plugins on changes</li>
+<li><tt class="docutils literal"><span class="pre">presume()</span></tt> - resume plugin monitor</li>
+<li><tt class="docutils literal"><span class="pre">pstop()</span></tt> - stop and unload all plugins</li>
 </ul>
+<p>All these procs are also available from the main application.</p>
 </p>
   <div class="section" id="7">
 <h1><a class="toc-backref" href="#7">Types</a></h1>
@@ -274,11 +297,11 @@ Object to send params and receive returned values to callbacks
   <span class="Identifier">name</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">string</span>                <span class="Comment">## Name of the plugin</span>
   <span class="Identifier">path</span><span class="Other">:</span> <span class="Identifier">string</span>
   <span class="Identifier">handle</span><span class="Other">:</span> <span class="Identifier">LibHandle</span>
-  <span class="Identifier">depends</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span>        <span class="Comment">## Plugins this plugin depends on</span>
+  <span class="Identifier">depends</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span>         <span class="Comment">## Plugins this plugin depends on</span>
   <span class="Identifier">dependents</span><span class="Other">:</span> <span class="Identifier">HashSet</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span>  <span class="Comment">## Plugins that depend on this plugin</span>
-  <span class="Identifier">pluginData</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">pointer</span>         <span class="Comment">## Pointer to store any type T within plugin to make</span>
-                     <span class="Comment">## data accessible across all callbacks within plugin</span>
-                     <span class="Comment">## Used by `getPluginData()` and `freePluginData()`</span>
+  <span class="Identifier">pluginData</span><span class="Other">:</span> <span class="Identifier">pointer</span>          <span class="Comment">## Pointer to store any type T within plugin to make</span>
+                    <span class="Comment">## data accessible across all callbacks within plugin</span>
+                    <span class="Comment">## Used by `getPluginData()` and `freePluginData()`</span>
   <span class="Identifier">onDepends</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">plugin</span><span class="Other">:</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span>
   <span class="Identifier">onLoad</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">plugin</span><span class="Other">:</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span>
   <span class="Identifier">onUnload</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">plugin</span><span class="Other">:</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span>
@@ -306,14 +329,11 @@ States of the plugin system - can be changed using the <tt class="docutils liter
   <span class="Identifier">run</span><span class="Operator">*</span><span class="Other">:</span> <a href="api.html#Run"><span class="Identifier">Run</span></a>                    <span class="Comment">## State of system</span>
   <span class="Identifier">ready</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">bool</span>                 <span class="Comment">## True when all plugins are loaded</span>
   <span class="Identifier">cli</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span>            <span class="Comment">## Commands to run when system is ready</span>
-  <span class="Identifier">notify</span><span class="Operator">*</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> <span class="Comment">## Callback to invoke `pluginNotify()` across</span>
-                                                <span class="Comment">## all plugins</span>
-  <span class="Identifier">handleCommand</span><span class="Operator">*</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">nimcall</span></span><span class="Other">.}</span></span> <span class="Comment">## Invoke callback by name across all loaded</span>
-                                                                   <span class="Comment">## plugins</span>
-  <span class="Identifier">tick</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">int</span>
-  <span class="Identifier">pmonitor</span><span class="Operator">*</span><span class="Other">:</span> <span class="Keyword">ptr</span> <span class="Identifier">PluginMonitor</span>
-  <span class="Identifier">plugins</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">OrderedTable</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">]</span>
-  <span class="Identifier">pluginData</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">Table</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">pointer</span><span class="Other">]</span>
+  <span class="Identifier">tick</span><span class="Other">:</span> <span class="Identifier">int</span>
+  <span class="Identifier">pmonitor</span><span class="Other">:</span> <span class="Keyword">ptr</span> <span class="Identifier">PluginMonitor</span>
+  <span class="Identifier">plugins</span><span class="Other">:</span> <span class="Identifier">OrderedTable</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">]</span>
+  <span class="Identifier">pluginData</span><span class="Other">:</span> <span class="Identifier">Table</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">pointer</span><span class="Other">]</span>
+  <span class="Identifier">callbacks</span><span class="Other">:</span> <span class="Identifier">Table</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">pointer</span><span class="Other">]</span>
 </pre></dt>
 <dd>
 
@@ -337,20 +357,6 @@ Allocate memory of type T in shared memory
 <dd>
 
 Free shared memory of type T
-
-</dd>
-<a id="splitCmd,string"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#splitCmd%2Cstring"><span class="Identifier">splitCmd</span></a><span class="Other">(</span><span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">name</span><span class="Other">,</span> <span class="Identifier">val</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">]</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-Split &quot;xxx yyy zzz&quot; into &quot;xxx&quot; and &quot;yyy zzz&quot;
-
-</dd>
-<a id="newCmdData,string"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#newCmdData%2Cstring"><span class="Identifier">newCmdData</span></a><span class="Other">(</span><span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-Create new CmdData with <tt class="docutils literal"><span class="pre">command</span></tt> split using <tt class="docutils literal"><span class="pre">os.parseCmdLine()</span></tt> and stored in CmdData.params for processing by receiving callback
 
 </dd>
 <a id="getManagerData,Plugin"></a>
@@ -426,34 +432,201 @@ Use this proc to free memory allocated within the plugin with <tt class="docutil
   <span class="Identifier">freePluginData</span><span class="Punctuation">[</span><span class="Identifier">PlgData</span><span class="Punctuation">]</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">)</span></pre>
 
 </dd>
-<a id="getCbResult,Plugin,string"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#getCbResult%2CPlugin%2Cstring"><span class="Identifier">getCbResult</span></a><span class="Other">(</span><span class="Identifier">plugin</span><span class="Other">:</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">;</span> <span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span>
+<a id="splitCmd,string"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#splitCmd%2Cstring"><span class="Identifier">splitCmd</span></a><span class="Other">(</span><span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">name</span><span class="Other">,</span> <span class="Identifier">val</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">]</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Split &quot;xxx yyy zzz&quot; into &quot;xxx&quot; and &quot;yyy zzz&quot;
+
+</dd>
+<a id="newCmdData,string"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#newCmdData%2Cstring"><span class="Identifier">newCmdData</span></a><span class="Other">(</span><span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Create new CmdData with <tt class="docutils literal"><span class="pre">command</span></tt> split using <tt class="docutils literal"><span class="pre">os.parseCmdLine()</span></tt> and stored in CmdData.params for processing by receiving callback
+
+</dd>
+<a id="getVersion"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#getVersion"><span class="Identifier">getVersion</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Get the Git version hash - repo state at compile time
+
+</dd>
+<a id="getVersionBanner"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#getVersionBanner"><span class="Identifier">getVersionBanner</span></a><span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">string</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Get the version banner which includes Git hash if any and compiler version used to build main application
+
+</dd>
+<a id="quit,PluginManager"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#quit%2CPluginManager"><span class="Identifier">quit</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Stop the plugin manager
+
+</dd>
+<a id="notify,PluginManager,string"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#notify%2CPluginManager%2Cstring"><span class="Identifier">notify</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">msg</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">KeyError</span><span class="Other">]</span><span class="Other">,</span>
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-Shortcut for running a callback defined in another plugin and getting the first string value returned<pre class="listing"><span class="Keyword">import</span> <span class="Identifier">plugins</span><span class="Operator">/</span><span class="Identifier">api</span>
+Invoke <tt class="docutils literal"><span class="pre">pluginNotify()</span></tt> across all plugins with <tt class="docutils literal"><span class="pre">msg</span></tt> as argument
+
+</dd>
+<a id="plist,PluginManager"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#plist%2CPluginManager"><span class="Identifier">plist</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Return a list of all loaded plugins
+
+</dd>
+<a id="pload,PluginManager,CmdData"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#pload%2CPluginManager%2CCmdData"><span class="Identifier">pload</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Reload all plugins if <tt class="docutils literal"><span class="pre">CmdData.params</span></tt> is empty, else (re)load the plugin(s) specified
+
+</dd>
+<a id="punload,PluginManager,CmdData"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#punload%2CPluginManager%2CCmdData"><span class="Identifier">punload</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">KeyError</span><span class="Other">,</span> <span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Unload all plugins if <tt class="docutils literal"><span class="pre">CmdData.params</span></tt> is empty, else unload the plugin(s) specified
+
+</dd>
+<a id="presume,PluginManager"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#presume%2CPluginManager"><span class="Identifier">presume</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">KeyError</span><span class="Other">]</span><span class="Other">,</span>
+                                    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Resume plugin monitor - monitor plugin files and recompile and reload if changed
+
+</dd>
+<a id="ppause,PluginManager"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#ppause%2CPluginManager"><span class="Identifier">ppause</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">KeyError</span><span class="Other">]</span><span class="Other">,</span>
+                                   <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+<p>Pause the plugin monitor - plugin files are not monitored for changes</p>
+<p>This helps during development of plugins if source files need to be edited for an extended period of time and saving incomplete/broken code to disk should not lead to recompile and reload.</p>
+
+
+</dd>
+<a id="pstop,PluginManager"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#pstop%2CPluginManager"><span class="Identifier">pstop</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">KeyError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Stop the plugin monitor thread - loaded plugins will stay loaded but the monitor thread will exit and no longer monitor plugins for changes
+
+</dd>
+<a id="getPlugin,PluginManager,string"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#getPlugin%2CPluginManager%2Cstring"><span class="Identifier">getPlugin</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">name</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">KeyError</span><span class="Other">]</span><span class="Other">,</span>
+    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Get plugin by name - if no such plugin, <tt class="docutils literal"><span class="pre">result.isNil</span></tt> will be true
+
+</dd>
+<a id="getCallback,PluginManager,string,string"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#getCallback%2CPluginManager%2Cstring%2Cstring"><span class="Identifier">getCallback</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">pname</span><span class="Other">,</span> <span class="Identifier">callback</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span>
+    <span class="Identifier">plugin</span><span class="Other">:</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">KeyError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+Get custom callback by plugin name and callback name<pre class="listing"><span class="Keyword">import</span> <span class="Identifier">plugins</span>
+
+<span class="Keyword">var</span>
+  <span class="Identifier">cmd</span> <span class="Operator">=</span> <span class="Identifier">newCmdData</span><span class="Punctuation">(</span><span class="StringLit">&quot;callbackparam&quot;</span><span class="Punctuation">)</span>
+  <span class="Identifier">plugin</span> <span class="Operator">=</span> <span class="Identifier">getPlugin</span><span class="Punctuation">(</span><span class="StringLit">&quot;plugin1&quot;</span><span class="Punctuation">)</span>
+  <span class="Identifier">callback</span> <span class="Operator">=</span> <span class="Identifier">getCallback</span><span class="Punctuation">(</span><span class="Identifier">manager</span><span class="Punctuation">,</span> <span class="StringLit">&quot;plugin1&quot;</span><span class="Punctuation">,</span> <span class="StringLit">&quot;callbackname&quot;</span><span class="Punctuation">)</span>
+<span class="Keyword">if</span> <span class="Keyword">not</span> <span class="Identifier">callback</span><span class="Operator">.</span><span class="Identifier">isNil</span><span class="Punctuation">:</span>
+  <span class="Identifier">callback</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">)</span></pre>
+
+</dd>
+<a id="call,PluginManager,string,CmdData"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#call%2CPluginManager%2Cstring%2CCmdData"><span class="Identifier">call</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">callback</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">KeyError</span><span class="Other">,</span> <span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+<p>Invoke custom callback across all plugins by callback name</p>
+<p><tt class="docutils literal"><span class="pre">CmdData.params</span></tt> should only include the parameters to pass to the callback</p>
+<pre class="listing"><span class="Keyword">import</span> <span class="Identifier">plugins</span>
+
+<span class="Keyword">var</span>
+  <span class="Identifier">cmd</span> <span class="Operator">=</span> <span class="Identifier">newCmdData</span><span class="Punctuation">(</span><span class="StringLit">&quot;callbackparam&quot;</span><span class="Punctuation">)</span>
+<span class="Identifier">call</span><span class="Punctuation">(</span><span class="Identifier">manager</span><span class="Punctuation">,</span> <span class="StringLit">&quot;callbackname&quot;</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">)</span></pre>
+
+</dd>
+<a id="callPlugin,PluginManager,string,string,CmdData"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#callPlugin%2CPluginManager%2Cstring%2Cstring%2CCmdData"><span class="Identifier">callPlugin</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">pname</span><span class="Other">,</span> <span class="Identifier">callback</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">KeyError</span><span class="Other">,</span> <span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+<p>Invoke custom callbacks by plugin name and callback name</p>
+<p><tt class="docutils literal"><span class="pre">CmdData.params</span></tt> should only include the parameters to pass to the callback</p>
+<pre class="listing"><span class="Keyword">import</span> <span class="Identifier">plugins</span>
+
+<span class="Keyword">var</span>
+  <span class="Identifier">cmd</span> <span class="Operator">=</span> <span class="Identifier">newCmdData</span><span class="Punctuation">(</span><span class="StringLit">&quot;callbackparam&quot;</span><span class="Punctuation">)</span>
+<span class="Identifier">callPlugin</span><span class="Punctuation">(</span><span class="Identifier">manager</span><span class="Punctuation">,</span> <span class="StringLit">&quot;plugin1&quot;</span><span class="Punctuation">,</span> <span class="StringLit">&quot;callbackname&quot;</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">)</span></pre>
+
+</dd>
+<a id="callCommand,PluginManager,CmdData"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#callCommand%2CPluginManager%2CCmdData"><span class="Identifier">callCommand</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">cmd</span><span class="Other">:</span> <a href="api.html#CmdData"><span class="Identifier">CmdData</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">KeyError</span><span class="Other">,</span> <span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+<p>Invoke custom callbacks in a command line format</p>
+<p><tt class="docutils literal"><span class="pre">CmdData.params</span></tt> should include the callback name and will be searched across all loaded plugins.</p>
+<pre class="listing"><span class="Keyword">import</span> <span class="Identifier">plugins</span>
+
+<span class="Keyword">var</span>
+  <span class="Identifier">cmd</span> <span class="Operator">=</span> <span class="Identifier">newCmdData</span><span class="Punctuation">(</span><span class="StringLit">&quot;callbackname callbackparam&quot;</span><span class="Punctuation">)</span>
+<span class="Identifier">callCommand</span><span class="Punctuation">(</span><span class="Identifier">manager</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">)</span></pre>
+
+</dd>
+<a id="getCommandResult,PluginManager,string"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#getCommandResult%2CPluginManager%2Cstring"><span class="Identifier">getCommandResult</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">]</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">KeyError</span><span class="Other">,</span> <span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<dd>
+
+<p>Shortcut for running a callback defined in another plugin and getting all string values returned</p>
+<p><tt class="docutils literal"><span class="pre">CmdData.params</span></tt> should include the callback name and will be searched across all loaded plugins.</p>
+<pre class="listing"><span class="Keyword">import</span> <span class="Identifier">plugins</span><span class="Operator">/</span><span class="Identifier">api</span>
 
 <span class="Keyword">proc</span> <span class="Identifier">somecallback</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">:</span> <span class="Identifier">Plugin</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">:</span> <span class="Identifier">CmdData</span><span class="Punctuation">)</span> <span class="Punctuation">{</span><span class="Operator">.</span><span class="Identifier">pluginCallback</span><span class="Operator">.</span><span class="Punctuation">}</span> <span class="Operator">=</span>
   <span class="Keyword">var</span>
-    <span class="Identifier">ret</span> <span class="Operator">=</span> <span class="Identifier">getCbResult</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">,</span> <span class="StringLit">&quot;othercallback param1 param2&quot;</span><span class="Punctuation">)</span>
+    <span class="Identifier">ret</span> <span class="Operator">=</span> <span class="Identifier">getCommandResult</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">,</span> <span class="StringLit">&quot;othercallback param1 param2&quot;</span><span class="Punctuation">)</span>
 
 <span class="Comment"># Assume this callback is in another plugin</span>
 <span class="Keyword">proc</span> <span class="Identifier">othercallback</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">:</span> <span class="Identifier">Plugin</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">:</span> <span class="Identifier">CmdData</span><span class="Punctuation">)</span> <span class="Punctuation">{</span><span class="Operator">.</span><span class="Identifier">pluginCallback</span><span class="Operator">.</span><span class="Punctuation">}</span> <span class="Operator">=</span>
-  <span class="Keyword">if</span> <span class="Identifier">cmd</span><span class="Operator">.</span><span class="Identifier">params</span><span class="Operator">.</span><span class="Identifier">len</span> <span class="Operator">!=</span> <span class="DecNumber">0</span><span class="Punctuation">:</span>
-    <span class="Keyword">var</span>
-
-<span class="Keyword">if</span> <span class="Identifier">config</span><span class="Operator">.</span><span class="Identifier">settings</span><span class="Operator">.</span><span class="Identifier">hasKey</span><span class="Punctuation">(</span><span class="Identifier">name</span><span class="Punctuation">)</span><span class="Punctuation">:</span>
-  <span class="Identifier">cmd</span><span class="Operator">.</span><span class="Identifier">returned</span> <span class="Operator">=</span> <span class="Operator">@</span><span class="Punctuation">[</span><span class="Identifier">config</span><span class="Operator">.</span><span class="Identifier">settings</span><span class="Punctuation">[</span><span class="Identifier">name</span><span class="Punctuation">]</span><span class="Punctuation">]</span></pre>
+  <span class="Keyword">for</span> <span class="Identifier">param</span> <span class="Keyword">in</span> <span class="Identifier">cmd</span><span class="Operator">.</span><span class="Identifier">params</span><span class="Punctuation">:</span>
+    <span class="Identifier">cmd</span><span class="Operator">.</span><span class="Identifier">returned</span><span class="Operator">.</span><span class="Identifier">add</span> <span class="Identifier">param</span> <span class="Operator">&amp;</span> <span class="StringLit">&quot;return&quot;</span></pre>
 
 </dd>
-<a id="getCbIntResult,Plugin,string,int"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#getCbIntResult%2CPlugin%2Cstring%2Cint"><span class="Identifier">getCbIntResult</span></a><span class="Other">(</span><span class="Identifier">plugin</span><span class="Other">:</span> <a href="api.html#Plugin"><span class="Identifier">Plugin</span></a><span class="Other">;</span> <span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">default</span> <span class="Other">=</span> <span class="DecNumber">0</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
-    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
+<a id="getCommandIntResult,PluginManager,string,int"></a>
+<dt><pre><span class="Keyword">proc</span> <a href="#getCommandIntResult%2CPluginManager%2Cstring%2Cint"><span class="Identifier">getCommandIntResult</span></a><span class="Other">(</span><span class="Identifier">manager</span><span class="Other">:</span> <a href="api.html#PluginManager"><span class="Identifier">PluginManager</span></a><span class="Other">;</span> <span class="Identifier">command</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">default</span> <span class="Other">=</span> <span class="DecNumber">0</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">int</span><span class="Other">]</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma">
+    <span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">,</span> <span class="Identifier">KeyError</span><span class="Other">,</span> <span class="Identifier">ValueError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
 <dd>
 
-<p>Shortcut for running a callback defined in another plugin and getting the first integer value returned</p>
+<p>Shortcut for running a callback defined in another plugin and getting all integer values returned</p>
 <p>If no value is returned, return the <tt class="docutils literal"><span class="pre">default</span></tt> value specified.</p>
+<p><tt class="docutils literal"><span class="pre">CmdData.params</span></tt> should include the callback name and will be searched across all loaded plugins.</p>
+<pre class="listing"><span class="Keyword">import</span> <span class="Identifier">plugins</span><span class="Operator">/</span><span class="Identifier">api</span>
 
+<span class="Keyword">proc</span> <span class="Identifier">somecallback</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">:</span> <span class="Identifier">Plugin</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">:</span> <span class="Identifier">CmdData</span><span class="Punctuation">)</span> <span class="Punctuation">{</span><span class="Operator">.</span><span class="Identifier">pluginCallback</span><span class="Operator">.</span><span class="Punctuation">}</span> <span class="Operator">=</span>
+  <span class="Keyword">var</span>
+    <span class="Identifier">ret</span> <span class="Operator">=</span> <span class="Identifier">getCommandResult</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">,</span> <span class="StringLit">&quot;othercallback 1 2&quot;</span><span class="Punctuation">)</span>
+
+<span class="Comment"># Assume this callback is in another plugin</span>
+<span class="Keyword">proc</span> <span class="Identifier">othercallback</span><span class="Punctuation">(</span><span class="Identifier">plugin</span><span class="Punctuation">:</span> <span class="Identifier">Plugin</span><span class="Punctuation">,</span> <span class="Identifier">cmd</span><span class="Punctuation">:</span> <span class="Identifier">CmdData</span><span class="Punctuation">)</span> <span class="Punctuation">{</span><span class="Operator">.</span><span class="Identifier">pluginCallback</span><span class="Operator">.</span><span class="Punctuation">}</span> <span class="Operator">=</span>
+  <span class="Keyword">for</span> <span class="Identifier">param</span> <span class="Keyword">in</span> <span class="Identifier">cmd</span><span class="Operator">.</span><span class="Identifier">params</span><span class="Punctuation">:</span>
+    <span class="Keyword">try</span><span class="Punctuation">:</span>
+      <span class="Identifier">cmd</span><span class="Operator">.</span><span class="Identifier">returned</span><span class="Operator">.</span><span class="Identifier">add</span> <span class="Operator">$</span><span class="Punctuation">(</span><span class="Identifier">parseInt</span><span class="Punctuation">(</span><span class="Identifier">param</span><span class="Punctuation">)</span> <span class="Operator">*</span> <span class="DecNumber">2</span><span class="Punctuation">)</span>
+    <span class="Keyword">except</span><span class="Punctuation">:</span>
+      <span class="Identifier">cmd</span><span class="Operator">.</span><span class="Identifier">returned</span><span class="Operator">.</span><span class="Identifier">add</span> <span class="StringLit">&quot;&quot;</span></pre>
 
 </dd>
 
@@ -558,7 +731,7 @@ Use this template to specify which plugins this plugin depends on. System will e
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2020-03-03 00:12:53 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2020-03-07 07:47:21 UTC</small>
       </div>
     </div>
   </div>

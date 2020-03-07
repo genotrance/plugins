@@ -73,7 +73,25 @@ function main() {
   <div class="container">
     <h1 class="title">Index</h1>
     Modules: <a href="api.html">api</a>, <a href="plugins.html">plugins</a>.<br/><p /><h2>API symbols</h2>
-<dl><dt><a name="CmdData" href="#CmdData"><span>CmdData:</span></a></dt><dd><ul class="simple">
+<dl><dt><a name="call" href="#call"><span>call:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: call(manager: PluginManager; callback: string; cmd: CmdData)" href="api.html#call%2CPluginManager%2Cstring%2CCmdData">api: call(manager: PluginManager; callback: string; cmd: CmdData)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: call(manager: PluginManager; callback: string; cmd: CmdData)" href="plugins.html#call%2CPluginManager%2Cstring%2CCmdData">plugins: call(manager: PluginManager; callback: string; cmd: CmdData)</a></li>
+          </ul></dd>
+<dt><a name="callCommand" href="#callCommand"><span>callCommand:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: callCommand(manager: PluginManager; cmd: CmdData)" href="api.html#callCommand%2CPluginManager%2CCmdData">api: callCommand(manager: PluginManager; cmd: CmdData)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: callCommand(manager: PluginManager; cmd: CmdData)" href="plugins.html#callCommand%2CPluginManager%2CCmdData">plugins: callCommand(manager: PluginManager; cmd: CmdData)</a></li>
+          </ul></dd>
+<dt><a name="callPlugin" href="#callPlugin"><span>callPlugin:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: callPlugin(manager: PluginManager; pname, callback: string; cmd: CmdData)" href="api.html#callPlugin%2CPluginManager%2Cstring%2Cstring%2CCmdData">api: callPlugin(manager: PluginManager; pname, callback: string; cmd: CmdData)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: callPlugin(manager: PluginManager; pname, callback: string; cmd: CmdData)" href="plugins.html#callPlugin%2CPluginManager%2Cstring%2Cstring%2CCmdData">plugins: callPlugin(manager: PluginManager; pname, callback: string; cmd: CmdData)</a></li>
+          </ul></dd>
+<dt><a name="CmdData" href="#CmdData"><span>CmdData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="api: CmdData" href="api.html#CmdData">api: CmdData</a></li>
           <li><a class="reference external"
@@ -88,10 +106,14 @@ function main() {
 <dt><a name="freeManagerData" href="#freeManagerData"><span>freeManagerData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="api: freeManagerData[T](plugin: Plugin)" href="api.html#freeManagerData%2CPlugin">api: freeManagerData[T](plugin: Plugin)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: freeManagerData[T](plugin: Plugin)" href="plugins.html#freeManagerData%2CPlugin">plugins: freeManagerData[T](plugin: Plugin)</a></li>
           </ul></dd>
 <dt><a name="freePluginData" href="#freePluginData"><span>freePluginData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="api: freePluginData[T](plugin: Plugin)" href="api.html#freePluginData%2CPlugin">api: freePluginData[T](plugin: Plugin)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: freePluginData[T](plugin: Plugin)" href="plugins.html#freePluginData%2CPlugin">plugins: freePluginData[T](plugin: Plugin)</a></li>
           </ul></dd>
 <dt><a name="freeShared" href="#freeShared"><span>freeShared:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -99,21 +121,57 @@ function main() {
           <li><a class="reference external"
           data-doc-search-tag="plugins: freeShared[T](s: var ptr T)" href="plugins.html#freeShared%2Cptr.T">plugins: freeShared[T](s: var ptr T)</a></li>
           </ul></dd>
-<dt><a name="getCbIntResult" href="#getCbIntResult"><span>getCbIntResult:</span></a></dt><dd><ul class="simple">
+<dt><a name="getCallback" href="#getCallback"><span>getCallback:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: getCbIntResult(plugin: Plugin; command: string; default = 0): int" href="api.html#getCbIntResult%2CPlugin%2Cstring%2Cint">api: getCbIntResult(plugin: Plugin; command: string; default = 0): int</a></li>
+          data-doc-search-tag="api: getCallback(manager: PluginManager; pname, callback: string): proc (plugin: Plugin;
+    cmd: CmdData)" href="api.html#getCallback%2CPluginManager%2Cstring%2Cstring">api: getCallback(manager: PluginManager; pname, callback: string): proc (plugin: Plugin;
+    cmd: CmdData)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getCallback(manager: PluginManager; pname, callback: string): proc (plugin: Plugin;
+    cmd: CmdData)" href="plugins.html#getCallback%2CPluginManager%2Cstring%2Cstring">plugins: getCallback(manager: PluginManager; pname, callback: string): proc (plugin: Plugin;
+    cmd: CmdData)</a></li>
           </ul></dd>
-<dt><a name="getCbResult" href="#getCbResult"><span>getCbResult:</span></a></dt><dd><ul class="simple">
+<dt><a name="getCommandIntResult" href="#getCommandIntResult"><span>getCommandIntResult:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="api: getCbResult(plugin: Plugin; command: string): string" href="api.html#getCbResult%2CPlugin%2Cstring">api: getCbResult(plugin: Plugin; command: string): string</a></li>
+          data-doc-search-tag="api: getCommandIntResult(manager: PluginManager; command: string; default = 0): seq[int]" href="api.html#getCommandIntResult%2CPluginManager%2Cstring%2Cint">api: getCommandIntResult(manager: PluginManager; command: string; default = 0): seq[int]</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getCommandIntResult(manager: PluginManager; command: string; default = 0): seq[int]" href="plugins.html#getCommandIntResult%2CPluginManager%2Cstring%2Cint">plugins: getCommandIntResult(manager: PluginManager; command: string; default = 0): seq[int]</a></li>
+          </ul></dd>
+<dt><a name="getCommandResult" href="#getCommandResult"><span>getCommandResult:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: getCommandResult(manager: PluginManager; command: string): seq[string]" href="api.html#getCommandResult%2CPluginManager%2Cstring">api: getCommandResult(manager: PluginManager; command: string): seq[string]</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getCommandResult(manager: PluginManager; command: string): seq[string]" href="plugins.html#getCommandResult%2CPluginManager%2Cstring">plugins: getCommandResult(manager: PluginManager; command: string): seq[string]</a></li>
           </ul></dd>
 <dt><a name="getManagerData" href="#getManagerData"><span>getManagerData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="api: getManagerData[T](plugin: Plugin): T" href="api.html#getManagerData%2CPlugin">api: getManagerData[T](plugin: Plugin): T</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getManagerData[T](plugin: Plugin): T" href="plugins.html#getManagerData%2CPlugin">plugins: getManagerData[T](plugin: Plugin): T</a></li>
+          </ul></dd>
+<dt><a name="getPlugin" href="#getPlugin"><span>getPlugin:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: getPlugin(manager: PluginManager; name: string): Plugin" href="api.html#getPlugin%2CPluginManager%2Cstring">api: getPlugin(manager: PluginManager; name: string): Plugin</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getPlugin(manager: PluginManager; name: string): Plugin" href="plugins.html#getPlugin%2CPluginManager%2Cstring">plugins: getPlugin(manager: PluginManager; name: string): Plugin</a></li>
           </ul></dd>
 <dt><a name="getPluginData" href="#getPluginData"><span>getPluginData:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="api: getPluginData[T](plugin: Plugin): T" href="api.html#getPluginData%2CPlugin">api: getPluginData[T](plugin: Plugin): T</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getPluginData[T](plugin: Plugin): T" href="plugins.html#getPluginData%2CPlugin">plugins: getPluginData[T](plugin: Plugin): T</a></li>
+          </ul></dd>
+<dt><a name="getVersion" href="#getVersion"><span>getVersion:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: getVersion(): string" href="api.html#getVersion">api: getVersion(): string</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getVersion(): string" href="plugins.html#getVersion">plugins: getVersion(): string</a></li>
+          </ul></dd>
+<dt><a name="getVersionBanner" href="#getVersionBanner"><span>getVersionBanner:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: getVersionBanner(): string" href="api.html#getVersionBanner">api: getVersionBanner(): string</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: getVersionBanner(): string" href="plugins.html#getVersionBanner">plugins: getVersionBanner(): string</a></li>
           </ul></dd>
 <dt><a name="initPlugins" href="#initPlugins"><span>initPlugins:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -131,11 +189,29 @@ function main() {
           <li><a class="reference external"
           data-doc-search-tag="plugins: newShared[T](): ptr T" href="plugins.html#newShared">plugins: newShared[T](): ptr T</a></li>
           </ul></dd>
+<dt><a name="notify" href="#notify"><span>notify:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: notify(manager: PluginManager; msg: string)" href="api.html#notify%2CPluginManager%2Cstring">api: notify(manager: PluginManager; msg: string)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: notify(manager: PluginManager; msg: string)" href="plugins.html#notify%2CPluginManager%2Cstring">plugins: notify(manager: PluginManager; msg: string)</a></li>
+          </ul></dd>
 <dt><a name="paused" href="#paused"><span>paused:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="Run.paused" href="api.html#paused">Run.paused</a></li>
           <li><a class="reference external"
           data-doc-search-tag="Run.paused" href="plugins.html#paused">Run.paused</a></li>
+          </ul></dd>
+<dt><a name="plist" href="#plist"><span>plist:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: plist(manager: PluginManager): seq[string]" href="api.html#plist%2CPluginManager">api: plist(manager: PluginManager): seq[string]</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: plist(manager: PluginManager): seq[string]" href="plugins.html#plist%2CPluginManager">plugins: plist(manager: PluginManager): seq[string]</a></li>
+          </ul></dd>
+<dt><a name="pload" href="#pload"><span>pload:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: pload(manager: PluginManager; cmd: CmdData)" href="api.html#pload%2CPluginManager%2CCmdData">api: pload(manager: PluginManager; cmd: CmdData)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: pload(manager: PluginManager; cmd: CmdData)" href="plugins.html#pload%2CPluginManager%2CCmdData">plugins: pload(manager: PluginManager; cmd: CmdData)</a></li>
           </ul></dd>
 <dt><a name="Plugin" href="#Plugin"><span>Plugin:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -179,6 +255,36 @@ function main() {
 <li><a class="reference external"
           data-doc-search-tag="api: pluginUnload(body: untyped)" href="api.html#pluginUnload.t%2Cuntyped">api: pluginUnload(body: untyped)</a></li>
           </ul></dd>
+<dt><a name="ppause" href="#ppause"><span>ppause:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: ppause(manager: PluginManager)" href="api.html#ppause%2CPluginManager">api: ppause(manager: PluginManager)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: ppause(manager: PluginManager)" href="plugins.html#ppause%2CPluginManager">plugins: ppause(manager: PluginManager)</a></li>
+          </ul></dd>
+<dt><a name="presume" href="#presume"><span>presume:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: presume(manager: PluginManager)" href="api.html#presume%2CPluginManager">api: presume(manager: PluginManager)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: presume(manager: PluginManager)" href="plugins.html#presume%2CPluginManager">plugins: presume(manager: PluginManager)</a></li>
+          </ul></dd>
+<dt><a name="pstop" href="#pstop"><span>pstop:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: pstop(manager: PluginManager)" href="api.html#pstop%2CPluginManager">api: pstop(manager: PluginManager)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: pstop(manager: PluginManager)" href="plugins.html#pstop%2CPluginManager">plugins: pstop(manager: PluginManager)</a></li>
+          </ul></dd>
+<dt><a name="punload" href="#punload"><span>punload:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: punload(manager: PluginManager; cmd: CmdData)" href="api.html#punload%2CPluginManager%2CCmdData">api: punload(manager: PluginManager; cmd: CmdData)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: punload(manager: PluginManager; cmd: CmdData)" href="plugins.html#punload%2CPluginManager%2CCmdData">plugins: punload(manager: PluginManager; cmd: CmdData)</a></li>
+          </ul></dd>
+<dt><a name="quit" href="#quit"><span>quit:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="api: quit(manager: PluginManager)" href="api.html#quit%2CPluginManager">api: quit(manager: PluginManager)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="plugins: quit(manager: PluginManager)" href="plugins.html#quit%2CPluginManager">plugins: quit(manager: PluginManager)</a></li>
+          </ul></dd>
 <dt><a name="Run" href="#Run"><span>Run:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="api: Run" href="api.html#Run">api: Run</a></li>
@@ -210,7 +316,7 @@ function main() {
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2020-03-03 00:12:53 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2020-03-07 07:47:21 UTC</small>
       </div>
     </div>
   </div>

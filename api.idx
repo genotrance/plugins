@@ -7,8 +7,29 @@ Run	api.html#Run	api: Run
 PluginManager	api.html#PluginManager	api: PluginManager	
 newShared	api.html#newShared	api: newShared[T](): ptr T	
 freeShared	api.html#freeShared,ptr.T	api: freeShared[T](s: var ptr T)	
+getManagerData	api.html#getManagerData,Plugin	api: getManagerData[T](plugin: Plugin): T	
+freeManagerData	api.html#freeManagerData,Plugin	api: freeManagerData[T](plugin: Plugin)	
+getPluginData	api.html#getPluginData,Plugin	api: getPluginData[T](plugin: Plugin): T	
+freePluginData	api.html#freePluginData,Plugin	api: freePluginData[T](plugin: Plugin)	
 splitCmd	api.html#splitCmd,string	api: splitCmd(command: string): tuple[name, val: string]	
 newCmdData	api.html#newCmdData,string	api: newCmdData(command: string): CmdData	
+getVersion	api.html#getVersion	api: getVersion(): string	
+getVersionBanner	api.html#getVersionBanner	api: getVersionBanner(): string	
+quit	api.html#quit,PluginManager	api: quit(manager: PluginManager)	
+notify	api.html#notify,PluginManager,string	api: notify(manager: PluginManager; msg: string)	
+plist	api.html#plist,PluginManager	api: plist(manager: PluginManager): seq[string]	
+pload	api.html#pload,PluginManager,CmdData	api: pload(manager: PluginManager; cmd: CmdData)	
+punload	api.html#punload,PluginManager,CmdData	api: punload(manager: PluginManager; cmd: CmdData)	
+presume	api.html#presume,PluginManager	api: presume(manager: PluginManager)	
+ppause	api.html#ppause,PluginManager	api: ppause(manager: PluginManager)	
+pstop	api.html#pstop,PluginManager	api: pstop(manager: PluginManager)	
+getPlugin	api.html#getPlugin,PluginManager,string	api: getPlugin(manager: PluginManager; name: string): Plugin	
+getCallback	api.html#getCallback,PluginManager,string,string	api: getCallback(manager: PluginManager; pname, callback: string): proc (plugin: Plugin;\n    cmd: CmdData)	
+call	api.html#call,PluginManager,string,CmdData	api: call(manager: PluginManager; callback: string; cmd: CmdData)	
+callPlugin	api.html#callPlugin,PluginManager,string,string,CmdData	api: callPlugin(manager: PluginManager; pname, callback: string; cmd: CmdData)	
+callCommand	api.html#callCommand,PluginManager,CmdData	api: callCommand(manager: PluginManager; cmd: CmdData)	
+getCommandResult	api.html#getCommandResult,PluginManager,string	api: getCommandResult(manager: PluginManager; command: string): seq[string]	
+getCommandIntResult	api.html#getCommandIntResult,PluginManager,string,int	api: getCommandIntResult(manager: PluginManager; command: string; default = 0): seq[int]	
 pluginCallback	api.html#pluginCallback.m	api: pluginCallback(body): untyped	
 pluginLoad	api.html#pluginLoad.t,untyped	api: pluginLoad(body: untyped)	
 pluginLoad	api.html#pluginLoad.t	api: pluginLoad()	
@@ -17,9 +38,3 @@ pluginTick	api.html#pluginTick.t,untyped	api: pluginTick(body: untyped)
 pluginNotify	api.html#pluginNotify.t,untyped	api: pluginNotify(body: untyped)	
 pluginReady	api.html#pluginReady.t,untyped	api: pluginReady(body: untyped)	
 pluginDepends	api.html#pluginDepends.t	api: pluginDepends(deps)	
-getManagerData	api.html#getManagerData,Plugin	api: getManagerData[T](plugin: Plugin): T	
-freeManagerData	api.html#freeManagerData,Plugin	api: freeManagerData[T](plugin: Plugin)	
-getPluginData	api.html#getPluginData,Plugin	api: getPluginData[T](plugin: Plugin): T	
-freePluginData	api.html#freePluginData,Plugin	api: freePluginData[T](plugin: Plugin)	
-getCbResult	api.html#getCbResult,Plugin,string	api: getCbResult(plugin: Plugin; command: string): string	
-getCbIntResult	api.html#getCbIntResult,Plugin,string,int	api: getCbIntResult(plugin: Plugin; command: string; default = 0): int	
