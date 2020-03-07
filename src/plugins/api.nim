@@ -18,11 +18,11 @@
 ## - `pluginUnload()` which gets called before the plugin is unloaded
 ## - `pluginTick()` which gets called every time `syncPlugins()` runs
 ## - `pluginNotify()` which gets called when `PluginManager.notify()`
-##    is called
+##   is called
 ## - `pluginReady()` which gets called when all plugins are loaded and
-##    system is ready
+##   system is ready
 ## - `pluginDepends()` which should be used when a plugin depends on
-##    other plugins being loaded
+##   other plugins being loaded
 ##
 ## Plugins can choose to use any combination of these optional
 ## definitions depending on the use case.
@@ -30,16 +30,23 @@
 ## In addition, plugins can define custom callbacks by using the
 ## `{.pluginCallback.}` pragma.
 ##
-## Custom callbacks can be invoked with `PluginManager.handleCommand()`.
+## Custom callbacks can be invoked with the `callCommand()` proc.
 ## The callback name and params should be populated correctly in the
-## `CmdData.params` and return values if any should be populated by
-## the callback in `CmdData.returned`. Both these are `string` types
-## so a `pointer` type `CmdData.pparams` and `CmdData.preturned` are
-## available for other types of data. In addition, callbacks should
-## set `CmdData.failed` to `true` if the callback has failed to notify
-## the caller.
+## `CmdData.params`. This approach is useful if the callback needs
+## to be invoked as a string like if it were provided by user input.
 ##
-## The `newCmdData()`, `getCbResult()` and `getCbIntResult()` procs
+## In addition, the `call()` and `callPlugin()` procs are also available
+## to invoke custom callbacks directly without having to pass the callback
+## name in `CmdData`. Lastly, the `getPlugin()` and `getCallback()` procs
+## allow invoking callbacks like regular code.
+##
+## Return values if any can be populated by the callback in `CmdData.returned`
+## which, along with `CmdData.params`, are `string` types so a `pointer`
+## type `CmdData.pparams` and `CmdData.preturned` are also available for
+## other types of data. In addition, callbacks should set `CmdData.failed`
+## to `true` if the callback has failed in order to notify the caller.
+##
+## The `newCmdData()`, `getCommandResult()` and `getCommandIntResult()` procs
 ## are available to simplify invoking callbacks and getting return values.
 ##
 ## Callbacks should ensure they check input params and returned values
@@ -48,19 +55,25 @@
 ## The `getManagerData()` and `getPluginData()` procs enable storage of global
 ## and plugin local data so that it is accessible from any plugin.
 ##
-## The following global callbacks are available:
-## - `notify xxx` - invoke `PluginManager.notify()` with param `xxx`
-## - `version` - get version information of plugin
-## - `quit | exit` - stop and unload the plugin system
+## The following additional procs are available:
+## - `notify(xxx)` - invoke `pluginNotify()` across all plugins with param `xxx`
+## - `getVersion()` - get git version hash of main application
+## - `getVersionBanner()` - get git and Nim compiler version of main application
+## - `quit()` - stop and unload the plugin system
 ##
-## For plugins, the following callbacks are available:
-## - `plist` - list all loaded plugins
-## - `pload | preload [xxx]` - (re)load specific or all plugins
-## - `punload [xxx]` - unload specific or all plugins
-## - `ppause` - pause the plugin monitor - changes will not reload plugins
-## - `presume` - resume plugin monitor
-## - `pstop` - stop and unload all plugins
+## The following plugin system specific procs are available:
+## - `plist()` - list all loaded plugins
+## - `pload([xxx])` - (re)load specific or all plugins
+## - `punload([xxx])` - unload specific or all plugins
+## - `ppause()` - pause the plugin monitor - will not reload plugins on changes
+## - `presume()` - resume plugin monitor
+## - `pstop()` - stop and unload all plugins
+##
+## All these procs are also available from the main application.
+
 import macros, sets, strutils, tables
+
+const API {.used.} = 1
 
 include "."/utils
 
@@ -68,7 +81,7 @@ include "."/utils
 var
   ctcallbacks {.compiletime.}: HashSet[string]
 
-macro tryCatch(body: untyped): untyped =
+macro tryCatchMacro(body: untyped): untyped =
   if body[^1].kind == nnkStmtList:
     var
       tryStmt = nnkTryStmt.newTree(
@@ -79,6 +92,12 @@ macro tryCatch(body: untyped): untyped =
               newIdentNode("echo"),
               nnkCall.newTree(
                 newIdentNode("getStackTrace")
+              )
+            ),
+            nnkCommand.newTree(
+              newIdentNode("echo"),
+              nnkCall.newTree(
+                newIdentNode("getCurrentExceptionMsg")
               )
             )
           )
@@ -101,7 +120,7 @@ macro pluginCallback*(body): untyped =
     body.addPragma(ident("exportc"))
     body.addPragma(ident("dynlib"))
 
-    tryCatch:
+    tryCatchMacro:
       body
 
   result = body
@@ -129,6 +148,7 @@ template pluginLoad*(body: untyped) {.dirty.} =
       body
     except:
       echo getStackTrace()
+      echo getCurrentExceptionMsg()
 
 template pluginLoad*() {.dirty.} =
   ## Use this template if there is no code to be run on plugin load. `pluginLoad()`
@@ -159,6 +179,7 @@ template pluginUnload*(body: untyped) {.dirty.} =
       body
     except:
       echo getStackTrace()
+      echo getCurrentExceptionMsg()
 
 template pluginTick*(body: untyped) {.dirty.} =
   ## Use this template to specify the code to run on every tick - when
@@ -175,6 +196,7 @@ template pluginTick*(body: untyped) {.dirty.} =
       body
     except:
       echo getStackTrace()
+      echo getCurrentExceptionMsg()
 
 template pluginNotify*(body: untyped) {.dirty.} =
   ## Use this template to specify the code to run when a notify event is called
@@ -190,6 +212,7 @@ template pluginNotify*(body: untyped) {.dirty.} =
       body
     except:
       echo getStackTrace()
+      echo getCurrentExceptionMsg()
 
 template pluginReady*(body: untyped) {.dirty.} =
   ## Use this template to specify the code to run when all plugins are loaded
@@ -206,6 +229,7 @@ template pluginReady*(body: untyped) {.dirty.} =
       body
     except:
       echo getStackTrace()
+      echo getCurrentExceptionMsg()
 
 template pluginDepends*(deps) =
   ## Use this template to specify which plugins this plugin depends on.
@@ -218,148 +242,3 @@ template pluginDepends*(deps) =
   ##   pluginDepends(@["plg1", "plg2"])
   proc onDepends*(plugin: Plugin, cmd: CmdData) {.exportc, dynlib.} =
     plugin.depends.add deps
-
-proc getManagerData*[T](plugin: Plugin): T =
-  ## Use this proc to store any type T in the plugin manager. Data will persist
-  ## across plugin unload/reload and can be used to store information that
-  ## requires such persistence.
-  ##
-  ## Only first call allocates memory. Subsequent calls returns the object already
-  ## allocated before.
-  ##
-  ## Ensure `freeManagerData()` is called to free this memory.
-  ##
-  ## .. code-block:: nim
-  ##
-  ##   import plugins/api
-  ##
-  ##   type
-  ##     PlgData = object
-  ##       intField: int
-  ##
-  ##   pluginLoad:
-  ##     var pData = getManagerData[PlgData](plugin)
-  ##     pData.intField = 5
-  ##
-  ##   pluginTick:
-  ##     var pData = getManagerData[PlgData](plugin)
-  ##     pData.intField += 1
-  if not plugin.manager.pluginData.hasKey(plugin.name):
-    var
-      data = new(T)
-    GC_ref(data)
-    plugin.manager.pluginData[plugin.name] = cast[pointer](data)
-
-  result = cast[T](plugin.manager.pluginData[plugin.name])
-
-proc freeManagerData*[T](plugin: Plugin) =
-  ## Use this proc to free memory allocated in the plugin manager with `getManagerData()`
-  ##
-  ## .. code-block:: nim
-  ##
-  ##   import plugins/api
-  ##
-  ##   type
-  ##     PlgData = object
-  ##       intField: int
-  ##
-  ##   proc reloadAll(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
-  ##     freeManagerData[PlgData](plugin)
-  ##     var plgData = getManagerData[PlugData](plugin)
-  if plugin.manager.pluginData.hasKey(plugin.name):
-    var
-      data = cast[T](plugin.manager.pluginData[plugin.name])
-    GC_unref(data)
-
-    plugin.manager.pluginData.del(plugin.name)
-
-proc getPluginData*[T](plugin: Plugin): T =
-  ## Use this proc to store any type T within the plugin. Data will be accessible
-  ## across plugin callbacks but will be invalid after plugin unload.
-  ##
-  ## Only first call allocates memory. Subsequent calls returns the object already
-  ## allocated before.
-  ##
-  ## Ensure `freePluginData()` is called to free this memory before plugin unload.
-  ##
-  ## .. code-block:: nim
-  ##
-  ##   import plugins/api
-  ##
-  ##   type
-  ##     PlgData = object
-  ##       intField: int
-  ##
-  ##   pluginLoad:
-  ##     var pData = getPluginData[PlgData](plugin)
-  ##     pData.intField = 5
-  ##
-  ##   pluginTick:
-  ##     var pData = getManagerData[PlgData](plugin)
-  ##     pData.intField += 1
-  if plugin.pluginData.isNil:
-    var
-      data = new(T)
-    GC_ref(data)
-    plugin.pluginData = cast[pointer](data)
-
-  result = cast[T](plugin.pluginData)
-
-proc freePluginData*[T](plugin: Plugin) =
-  ## Use this proc to free memory allocated within the plugin with `getPluginData()`
-  ##
-  ## .. code-block:: nim
-  ##
-  ##   import plugins/api
-  ##
-  ##   type
-  ##     PlgData = object
-  ##       intField: int
-  ##
-  ##   pluginUnload:
-  ##     freePluginData[PlgData](plugin)
-  if not plugin.pluginData.isNil:
-    var
-      data = cast[T](plugin.pluginData)
-    GC_unref(data)
-
-    plugin.pluginData = nil
-
-proc getCbResult*(plugin: Plugin, command: string): string =
-  ## Shortcut for running a callback defined in another plugin and getting the first
-  ## string value returned
-  ##
-  ## .. code-block:: nim
-  ##
-  ##   import plugins/api
-  ##
-  ##   proc somecallback(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
-  ##     var
-  ##       ret = getCbResult(plugin, "othercallback param1 param2")
-  ##
-  ##   # Assume this callback is in another plugin
-  ##   proc othercallback(plugin: Plugin, cmd: CmdData) {.pluginCallback.} =
-  ##     if cmd.params.len != 0:
-  ##       var
-  ##
-  ##   if config.settings.hasKey(name):
-  ##     cmd.returned = @[config.settings[name]]
-  var
-    cmd = newCmdData(command)
-  plugin.manager.handleCommand(plugin.manager, cmd)
-  if not cmd.failed:
-    if cmd.returned.len != 0 and cmd.returned[0].len != 0:
-      return cmd.returned[0]
-
-proc getCbIntResult*(plugin: Plugin, command: string, default = 0): int =
-  ## Shortcut for running a callback defined in another plugin and getting the first
-  ## integer value returned
-  ##
-  ## If no value is returned, return the `default` value specified.
-  let
-    str = plugin.getCbResult(command)
-
-  try:
-    result = parseInt(str)
-  except:
-    result = default

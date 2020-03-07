@@ -14,9 +14,7 @@ This will download and install `plugins` in the standard Nimble package location
 
 __Usage__
 
-Detailed documentation [here](https://genotrance.github.io/plugins/theindex.html).
-
-The [plugins](https://genotrance.github.io/plugins/plugins.html) module should be used in the main application and the [api](https://genotrance.github.io/plugins/api.html) module should be used in each plugin.
+Detailed module documentation is available [here](https://genotrance.github.io/plugins/theindex.html). The [plugins](https://genotrance.github.io/plugins/plugins.html) module should be used in the main application and the [api](https://genotrance.github.io/plugins/api.html) module should be used in each plugin.
 
 See the `tests` directory for an example of a main application and plugins.
 

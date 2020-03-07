@@ -15,14 +15,26 @@ import os, strformat, strutils
 let
   flags = "--threads:on -o:html/ --project --index:on"
   expected = """Plugin 'plg1' dependency 'plg2' not loaded
-Plugin 'plg2' loaded (plg2test)
+Plugin 'plg2' loaded (plg1unload, plg2test)
 Plugin1 loaded
-plg2test: testparam
-Plugin1: testreturn
-Plugin 'plg1' loaded ()
+plg2test: test1param
+Plugin1: test2return
+Plugin 'plg1' loaded (plg1test)
 Plugin1 ready
 Plugin2 ready
+plg1test: test2param
+Plugin2: test1return
+notify: testmain
+plist: plg1 plg2
 Plugin 'plg1' unloaded
+Plugin1 loaded
+plg2test: test1param
+Plugin1: test2return
+Plugin 'plg1' loaded (plg1test)
+plg2test: testmain
+Main: test2return
+Plugin 'plg1' unloaded
+plg1unload: plg1
 Plugin 'plg2' unloaded"""
 
 task docs, "Doc generation":
@@ -44,11 +56,14 @@ task clean, "Clean up":
   rmDir("html")
 
 task test, "Test all":
-  cleanTask()
-  for mode in ["", "-d:binary"]:
-    exec &"nim c {mode} tests/tmain"
-    let (outp, errC) = gorgeEx("./tests/tmain quit")
-    doAssert outp.strip() == expected and errC == 0, &"""
+  for build in ["", "-d:release"]:
+    cleanTask()
+    for mode in ["", "-d:binary"]:
+      exec &"nim c {build} {mode} tests/tmain"
+      exec "ls -l tests"
+      let (outp, errC) = gorgeEx("./tests/tmain quit")
+      exec "ls -l tests/test1"
+      doAssert outp.strip() == expected and errC == 0, &"""
 
 Expected:
 {expected}

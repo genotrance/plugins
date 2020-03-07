@@ -20,10 +20,10 @@ type
     path: string
     handle: LibHandle
 
-    depends*: seq[string]       ## Plugins this plugin depends on
+    depends: seq[string]        ## Plugins this plugin depends on
     dependents: HashSet[string] ## Plugins that depend on this plugin
 
-    pluginData*: pointer        ## Pointer to store any type T within plugin to make
+    pluginData: pointer         ## Pointer to store any type T within plugin to make
                                 ## data accessible across all callbacks within plugin
                                 ## Used by `getPluginData()` and `freePluginData()`
 
@@ -57,13 +57,9 @@ type
     ready*: bool                ## True when all plugins are loaded
     cli*: seq[string]           ## Commands to run when system is ready
 
-    notify*: proc(manager: PluginManager, msg: string)          ## Callback to invoke `pluginNotify()` across
-                                                                ## all plugins
-    handleCommand*: proc(manager: PluginManager, cmd: CmdData)
-      {.nimcall.}                                               ## Invoke callback by name across all loaded
-                                                                ## plugins
+    tick: int
+    pmonitor: ptr PluginMonitor
+    plugins: OrderedTable[string, Plugin]
+    pluginData: Table[string, pointer]
 
-    tick*: int
-    pmonitor*: ptr PluginMonitor
-    plugins*: OrderedTable[string, Plugin]
-    pluginData*: Table[string, pointer]
+    callbacks: Table[string, pointer]

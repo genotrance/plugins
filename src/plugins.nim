@@ -6,12 +6,14 @@
 ## - Monitor source files for changes and rebuild (hot code reloading)
 ## - Load/unload/reload shared library
 ## - Provide standard and custom callback framework
-## - Allow shipping in binary-only mode (no hot code reloading) if required
+## - Allow shipping in binary-only mode (no source or hot code reloading)
+##   if required
 ##
 ## The library requires `--threads:on` since the monitoring function runs
 ## in a separate thread. It also needs `--gc:boehm` to ensure that memory
-## is handled correctly across multiple threads and plugins. To build in
-## binary mode, the `-d:binary` flag should be used.
+## is handled correctly across multiple threads and plugins. This is true
+## both for the main application as well as the individual plugins. To
+## build in binary mode, the `-d:binary` flag should be used.
 ##
 ## The boehm garbage collector or `libgc` can be installed using the
 ## package manager on most Linux distros and on OSX. For Windows, prebuilt
@@ -28,8 +30,12 @@
 ##   and performs all load/unload/reload functionality plus execution of
 ##   any callbacks invoked
 ## - `stopPlugins()` which stops the system and unloads cleanly
+##
+## Many of the procs and callbacks accessible from plugins can also be
+## called from the main application if required. Refer to the documentation
+## for the `plugins/api` module for more details.
 
-import algorithm, dynlib, locks, os, sequtils, sets, strformat, strutils, tables
+import algorithm, dynlib, locks, macros, os, sequtils, sets, strformat, strutils, tables
 
 when not defined(binary):
   import osproc, times
@@ -39,17 +45,13 @@ include plugins/utils
 var
   gThread: Thread[ptr PluginMonitor]
 
-template tryCatch(body: untyped) {.dirty.} =
-  var
-    ret {.inject.} = true
-  try:
-    body
-  except:
-    ret = false
-    when not defined(release):
-      raise getCurrentException()
-
 when not defined(binary):
+  proc dllName(sourcePath: string): string =
+    let
+      (dir, name, _) = sourcePath.splitFile()
+
+    result = dir / (DynlibFormat % name)
+
   proc sourceChanged(sourcePath, dllPath: string): bool =
     let
       dllTime = dllPath.getLastModificationTime()
@@ -122,8 +124,10 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
 
     when defined(binary):
       for dllPath in xPaths:
-        let
+        var
           name = dllPath.splitFile().name
+        if name.startsWith("lib"):
+          name = name[3 .. ^1]
 
         withLock pmonitor[].lock:
           if (allowed.len != 0 and name notin allowed) or
@@ -153,7 +157,7 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
           var
             relbuild =
               when defined(release):
-                "--opt:speed"
+                "-d:release"
               else:
                 "--debugger:native --debuginfo"
             output = ""
@@ -181,7 +185,7 @@ proc unloadPlugin(manager: PluginManager, name: string, force = true) =
       return
 
     for dep in manager.plugins[name].dependents:
-      manager.notify(manager, &"Plugin '{dep}' depends on '{name}' and might crash")
+      notify(manager, &"Plugin '{dep}' depends on '{name}' and might crash")
 
     if not manager.plugins[name].onUnload.isNil:
       var
@@ -189,9 +193,9 @@ proc unloadPlugin(manager: PluginManager, name: string, force = true) =
       tryCatch:
         manager.plugins[name].onUnload(manager.plugins[name], cmd)
       if not ret:
-        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{name}' crashed in 'pluginUnload()'")
+        notify(manager, getCurrentExceptionMsg() & &"Plugin '{name}' crashed in 'pluginUnload()'")
       if cmd.failed:
-        manager.notify(manager, &"Plugin '{name}' failed in 'pluginUnload()'")
+        notify(manager, &"Plugin '{name}' failed in 'pluginUnload()'")
 
     manager.plugins[name].handle.unloadLib()
     for dep in manager.plugins[name].depends:
@@ -200,7 +204,7 @@ proc unloadPlugin(manager: PluginManager, name: string, force = true) =
     manager.plugins[name] = nil
     manager.plugins.del(name)
 
-    manager.notify(manager, &"Plugin '{name}' unloaded")
+    notify(manager, &"Plugin '{name}' unloaded")
 
 proc notifyPlugins(manager: PluginManager, cmd: CmdData) =
   let
@@ -214,10 +218,10 @@ proc notifyPlugins(manager: PluginManager, cmd: CmdData) =
         plugin.onNotify(plugin, cmd)
       if not ret:
         plugin.onNotify = nil
-        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginNotify()'")
+        notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginNotify()'")
         manager.unloadPlugin(plugin.name)
       if cmd.failed:
-        manager.notify(manager, &"Plugin '{plugin.name}' failed in 'pluginNotify()'")
+        notify(manager, &"Plugin '{plugin.name}' failed in 'pluginNotify()'")
 
   echo cmd.params[0]
 
@@ -233,105 +237,23 @@ proc readyPlugins(manager: PluginManager, cmd: CmdData) =
         plugin.onReady(plugin, cmd)
       if not ret:
         plugin.onReady = nil
-        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginReady()'")
+        notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginReady()'")
         manager.unloadPlugin(plugin.name)
       if cmd.failed:
-        manager.notify(manager, &"Plugin '{plugin.name}' failed in 'pluginReady()'")
-
-proc getVersion(): string =
-  const
-    execResult = gorgeEx("git rev-parse HEAD")
-  when execResult[0].len > 0 and execResult[1] == 0:
-    result = execResult[0].strip()
-  else:
-    result ="couldn't determine git hash"
-
-proc handlePluginCommand(manager: PluginManager, cmd: CmdData) =
-  if cmd.params.len == 0:
-    cmd.failed = true
-    return
-
-  case cmd.params[0]:
-    of "plist":
-      var
-        nf = ""
-      for pl in manager.plugins.keys():
-        nf &= pl.extractFilename & " "
-      manager.notify(manager, nf)
-    of "preload", "pload":
-      if cmd.params.len > 1:
-        withLock manager.pmonitor[].lock:
-          for i in 1 .. cmd.params.len-1:
-            manager.pmonitor[].processed.excl cmd.params[i]
-      else:
-        manager.pmonitor[].processed.clear()
-    of "punload":
-      if cmd.params.len > 1:
-        for i in 1 .. cmd.params.len-1:
-          if manager.plugins.hasKey(cmd.params[i]):
-            manager.unloadPlugin(cmd.params[i])
-          else:
-            manager.notify(manager, &"Plugin '{cmd.params[i]}' not found")
-      else:
-        let
-          pkeys = toSeq(manager.plugins.keys())
-        for pl in pkeys:
-          manager.unloadPlugin(pl)
-    of "presume":
-      withLock manager.pmonitor[].lock:
-        manager.pmonitor[].run = executing
-      manager.notify(manager, &"Plugin monitor resumed")
-    of "ppause":
-      withLock manager.pmonitor[].lock:
-        manager.pmonitor[].run = paused
-      manager.notify(manager, &"Plugin monitor paused")
-    of "pstop":
-      withLock manager.pmonitor[].lock:
-        manager.pmonitor[].run = stopped
-      manager.notify(manager, &"Plugin monitor exited")
-    else:
-      cmd.failed = true
-      let
-        pkeys = toSeq(manager.plugins.keys())
-      for pl in pkeys:
-        var
-          plugin = manager.plugins[pl]
-          ccmd = new(CmdData)
-        ccmd.params = cmd.params[1 .. ^1]
-        if cmd.params[0] in plugin.cindex:
-          tryCatch:
-            plugin.callbacks[cmd.params[0]](plugin, ccmd)
-          if not ret:
-            manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in '{cmd.params[0]}()'")
-          elif ccmd.failed:
-            manager.notify(manager, &"Plugin '{plugin.name}' failed in '{cmd.params[0]}()'")
-          else:
-            cmd.returned &= ccmd.returned
-            cmd.failed = false
-          break
-
-proc handleCommand(manager: PluginManager, cmd: CmdData) =
-  if cmd.params.len != 0:
-    case cmd.params[0]:
-      of "quit", "exit":
-        manager.run = stopped
-      of "notify":
-        if cmd.params.len > 1:
-          manager.notify(manager, cmd.params[1 .. ^1].join(" "))
-        else:
-          cmd.failed = true
-      of "version":
-        manager.notify(manager,
-          &"Plugin {getVersion()}\ncompiled on {CompileDate} {CompileTime} with Nim v{NimVersion}")
-      else:
-        manager.handlePluginCommand(cmd)
-  else:
-    cmd.failed = true
+        notify(manager, &"Plugin '{plugin.name}' failed in 'pluginReady()'")
 
 proc toCallback(callback: pointer): proc(plugin: Plugin, cmd: CmdData) =
   if not callback.isNil:
     result = proc(plugin: Plugin, cmd: CmdData) =
       cast[proc(plugin: Plugin, cmd: CmdData) {.cdecl.}](callback)(plugin, cmd)
+
+macro addGlobalCallback(name: untyped): untyped =
+  let
+    nodeName = name.strVal()
+    node = newIdentNode(nodeName)
+
+  result = quote do:
+    result.callbacks[`nodeName`] = cast[pointer](`node`)
 
 proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): PluginManager =
   ## Loads all plugins in specified `paths`
@@ -344,18 +266,32 @@ proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): PluginManager =
   result = new(PluginManager)
 
   result.cli = cmds
-  result.handleCommand = handleCommand
+
+  # Global callbacks
+  addGlobalCallback(notifyPlugins)
+  addGlobalCallback(unloadPlugin)
+
+  addGlobalCallback(notify)
+  addGlobalCallback(plist)
+  addGlobalCallback(pload)
+  addGlobalCallback(punload)
+  addGlobalCallback(presume)
+  addGlobalCallback(ppause)
+  addGlobalCallback(pstop)
+
+  addGlobalCallback(getPlugin)
+  addGlobalCallback(getCallback)
+
+  addGlobalCallback(call)
+  addGlobalCallback(callPlugin)
+  addGlobalCallback(callCommand)
+  addGlobalCallback(getCommandResult)
+  addGlobalCallback(getCommandIntResult)
 
   result.pmonitor = newShared[PluginMonitor]()
   result.pmonitor[].lock.initLock()
   result.pmonitor[].run = executing
   result.pmonitor[].paths = paths
-
-  result.notify = proc(manager: PluginManager, msg: string) =
-    var
-      cmd = new(CmdData)
-    cmd.params.add msg
-    manager.notifyPlugins(cmd)
 
   createThread(gThread, monitorPlugins, result.pmonitor)
 
@@ -374,34 +310,34 @@ proc initPlugin(plugin: Plugin) =
         tryCatch:
           plugin.onDepends(plugin, cmd)
         if not ret:
-          plugin.manager.notify(plugin.manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginDepends()'")
+          notify(plugin.manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginDepends()'")
           plugin.manager.unloadPlugin(plugin.name)
           return
         if cmd.failed:
-          plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' failed in 'pluginDepends()'")
+          notify(plugin.manager, &"Plugin '{plugin.name}' failed in 'pluginDepends()'")
           plugin.manager.unloadPlugin(plugin.name)
           return
 
     for dep in plugin.depends:
       if not plugin.manager.plugins.hasKey(dep):
         if once:
-          plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' dependency '{dep}' not loaded")
+          notify(plugin.manager, &"Plugin '{plugin.name}' dependency '{dep}' not loaded")
         return
 
     plugin.onLoad = plugin.handle.symAddr("onLoad").toCallback()
     if plugin.onLoad.isNil:
-      plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' missing 'pluginLoad()'")
+      notify(plugin.manager, &"Plugin '{plugin.name}' missing 'pluginLoad()'")
       plugin.manager.unloadPlugin(plugin.name)
     else:
       cmd = new(CmdData)
       tryCatch:
         plugin.onLoad(plugin, cmd)
       if not ret:
-        plugin.manager.notify(plugin.manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginLoad()'")
+        notify(plugin.manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginLoad()'")
         plugin.manager.unloadPlugin(plugin.name)
         return
       if cmd.failed:
-        plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' failed in 'pluginLoad()'")
+        notify(plugin.manager, &"Plugin '{plugin.name}' failed in 'pluginLoad()'")
         plugin.manager.unloadPlugin(plugin.name)
         return
 
@@ -413,14 +349,14 @@ proc initPlugin(plugin: Plugin) =
       for cb in plugin.cindex:
         plugin.callbacks[cb] = plugin.handle.symAddr(cb).toCallback()
         if plugin.callbacks[cb].isNil:
-          plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' callback '{cb}' failed to load")
+          notify(plugin.manager, &"Plugin '{plugin.name}' callback '{cb}' failed to load")
           plugin.callbacks.del cb
 
       for dep in plugin.depends:
         if plugin.manager.plugins.hasKey(dep):
           plugin.manager.plugins[dep].dependents.incl plugin.name
 
-      plugin.manager.notify(plugin.manager, &"Plugin '{plugin.name}' loaded (" & toSeq(plugin.callbacks.keys()).join(", ") & ")")
+      notify(plugin.manager, &"Plugin '{plugin.name}' loaded (" & toSeq(plugin.callbacks.keys()).join(", ") & ")")
 
 proc loadPlugin(manager: PluginManager, dllPath: string) =
   var
@@ -446,20 +382,20 @@ proc loadPlugin(manager: PluginManager, dllPath: string) =
       count -= 1
 
     if fileExists(plugin.path):
-      manager.notify(manager, &"Plugin '{plugin.name}' failed to unload")
+      notify(manager, &"Plugin '{plugin.name}' failed to unload")
       return
 
     tryCatch:
       moveFile(dllPath, plugin.path)
     if not ret:
-      manager.notify(manager, &"Plugin '{plugin.name}' dll copy failed")
+      notify(manager, &"Plugin '{plugin.name}' dll copy failed")
       return
 
   plugin.handle = plugin.path.loadLib()
   plugin.dependents.init()
 
   if plugin.handle.isNil:
-    manager.notify(manager, &"Plugin '{plugin.name}' failed to load")
+    notify(manager, &"Plugin '{plugin.name}' failed to load")
     return
   else:
     manager.plugins[plugin.name] = plugin
@@ -498,7 +434,7 @@ proc reloadPlugins(manager: PluginManager) =
     if i.fileExists():
       manager.loadPlugin(i)
     else:
-      manager.notify(manager, i)
+      notify(manager, i)
 
   for i in manager.plugins.keys():
     if manager.plugins[i].onLoad.isNil:
@@ -515,17 +451,17 @@ proc tickPlugins(manager: PluginManager) =
       tryCatch:
         plugin.onTick(plugin, cmd)
       if not ret:
-        manager.notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginTick()'")
+        notify(manager, getCurrentExceptionMsg() & &"Plugin '{plugin.name}' crashed in 'pluginTick()'")
         manager.unloadPlugin(plugin.name)
       if cmd.failed:
-        manager.notify(manager, &"Plugin '{plugin.name}' failed in 'pluginTick()'")
+        notify(manager, &"Plugin '{plugin.name}' failed in 'pluginTick()'")
 
 proc handleCli(manager: PluginManager) =
   if manager.cli.len != 0:
     for command in manager.cli:
       var
         cmd = newCmdData(command)
-      manager.handleCommand(manager, cmd)
+      callCommand(manager, cmd)
     manager.cli = @[]
 
 proc handleReady(manager: PluginManager) =
