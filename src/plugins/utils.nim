@@ -184,11 +184,11 @@ when not declared(API) or defined(nimdoc):
     ## Reload all plugins if `CmdData.params` is empty, else (re)load
     ## the plugin(s) specified
     if cmd.params.len > 0:
-      withLock manager.pmonitor[].lock:
-        for i in 0 .. cmd.params.len-1:
-          manager.pmonitor[].processed.excl cmd.params[i]
+      for i in 0 .. cmd.params.len-1:
+        gMainToMon.send("load")
+        gMainToMon.send(cmd.params[i])
     else:
-      manager.pmonitor[].processed.clear()
+      gMainToMon.send("loadall")
 
   proc punload*(manager: PluginManager, cmd: CmdData) =
     ## Unload all plugins if `CmdData.params` is empty, else unload
@@ -212,8 +212,7 @@ when not declared(API) or defined(nimdoc):
   proc presume*(manager: PluginManager) =
     ## Resume plugin monitor - monitor plugin files and recompile
     ## and reload if changed
-    withLock manager.pmonitor[].lock:
-      manager.pmonitor[].run = executing
+    gMainToMon.send("executing")
     notify(manager, &"Plugin monitor resumed")
 
   proc ppause*(manager: PluginManager) =
@@ -224,16 +223,14 @@ when not declared(API) or defined(nimdoc):
     ## need to be edited for an extended period of time and saving
     ## incomplete/broken code to disk should not lead to recompile
     ## and reload.
-    withLock manager.pmonitor[].lock:
-      manager.pmonitor[].run = paused
+    gMainToMon.send("paused")
     notify(manager, &"Plugin monitor paused")
 
   proc pstop*(manager: PluginManager) =
     ## Stop the plugin monitor thread - loaded plugins will stay
     ## loaded but the monitor thread will exit and no longer monitor
     ## plugins for changes
-    withLock manager.pmonitor[].lock:
-      manager.pmonitor[].run = stopped
+    gMainToMon.send("stopped")
     notify(manager, &"Plugin monitor exited")
 
   proc getPlugin*(manager: PluginManager, name: string): Plugin =

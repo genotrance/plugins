@@ -35,7 +35,7 @@
 ## called from the main application if required. Refer to the documentation
 ## for the `plugins/api` module for more details.
 
-import algorithm, dynlib, locks, macros, os, sequtils, sets, strformat, strutils, tables
+import algorithm, dynlib, macros, os, sequtils, sets, strformat, strutils, tables
 
 when not defined(binary):
   import osproc, times
@@ -43,7 +43,7 @@ when not defined(binary):
 include plugins/utils
 
 var
-  gThread: Thread[ptr PluginMonitor]
+  gThread: Thread[seq[string]]
 
 when not defined(binary):
   proc dllName(sourcePath: string): string =
@@ -68,13 +68,12 @@ when not defined(binary):
             result = true
             break
 
-proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
+proc monitorPlugins(paths: seq[string]) {.thread.} =
   var
-    paths: seq[string]
+    run = executing
+    ready = false
+    processed: HashSet[string]
     delay = 200
-
-  withLock pmonitor[].lock:
-    paths = pmonitor[].paths
 
   while true:
     defer:
@@ -94,18 +93,28 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
       xPaths.add toSeq(walkFiles(path/"*" & ext))
     xPaths.sort()
 
-    withLock pmonitor[].lock:
-      case pmonitor[].run
-      of paused:
-        continue
-      of stopped:
+    let
+      fromMain = gMainToMon.tryRecv()
+    if fromMain.dataAvailable:
+      case fromMain.msg
+      of "load":
+        processed.excl gMainToMon.recv()
+      of "loadall":
+        processed.clear()
+      of "executing":
+        run = executing
+      of "paused":
+        run = paused
+      of "stopped":
         break
-      else:
-        discard
 
-      if not pmonitor[].ready and pmonitor[].processed.len == xPaths.len:
-        pmonitor[].ready = true
-        delay = 2000
+    if run == paused:
+      continue
+
+    if not ready and processed.len == xPaths.len:
+      ready = true
+      gMonToMain.send("ready")
+      delay = 2000
 
     # BROKEN
     let
@@ -129,16 +138,16 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
         if name.startsWith("lib"):
           name = name[3 .. ^1]
 
-        withLock pmonitor[].lock:
-          if (allowed.len != 0 and name notin allowed) or
-              (blocked.len != 0 and name in blocked):
-            if name notin pmonitor[].processed:
-              pmonitor[].processed.incl name
-            continue
+        if (allowed.len != 0 and name notin allowed) or
+            (blocked.len != 0 and name in blocked):
+          if name notin processed:
+            processed.incl name
+          continue
 
-          if name notin pmonitor[].processed:
-            pmonitor[].processed.incl name
-            pmonitor[].load.incl &"{dllPath}"
+        if name notin processed:
+          processed.incl name
+          gMonToMain.send("load")
+          gMonToMain.send(dllPath)
     else:
       for sourcePath in xPaths:
         let
@@ -148,9 +157,8 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
 
         if (allowed.len != 0 and name notin allowed) or
             (blocked.len != 0 and name in blocked):
-          withLock pmonitor[].lock:
-            if name notin pmonitor[].processed:
-              pmonitor[].processed.incl name
+          if name notin processed:
+            processed.incl name
           continue
 
         if not dllPath.fileExists() or sourcePath.sourceChanged(dllPath):
@@ -167,17 +175,18 @@ proc monitorPlugins(pmonitor: ptr PluginMonitor) {.thread.} =
             sourcePath.getLastModificationTime() > dllPathNew.getLastModificationTime():
             (output, exitCode) = execCmdEx(&"nim c --app:lib -o:{dllPath}.new {relbuild} {sourcePath}")
           if exitCode != 0:
-            pmonitor[].load.incl &"{output}\nPlugin compilation failed for {sourcePath}"
+            gMonToMain.send("message")
+            gMonToMain.send(&"{output}\nPlugin compilation failed for {sourcePath}")
           else:
-            withLock pmonitor[].lock:
-              if name notin pmonitor[].processed:
-                pmonitor[].processed.incl name
-              pmonitor[].load.incl &"{dllPath}.new"
+            if name notin processed:
+              processed.incl name
+            gMonToMain.send("load")
+            gMonToMain.send(&"{dllPath}.new")
         else:
-          withLock pmonitor[].lock:
-            if name notin pmonitor[].processed:
-              pmonitor[].processed.incl name
-              pmonitor[].load.incl &"{dllPath}"
+          if name notin processed:
+            processed.incl name
+            gMonToMain.send("load")
+            gMonToMain.send(dllPath)
 
 proc unloadPlugin(manager: PluginManager, name: string, force = true) =
   if manager.plugins.hasKey(name):
@@ -288,12 +297,7 @@ proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): PluginManager =
   addGlobalCallback(getCommandResult)
   addGlobalCallback(getCommandIntResult)
 
-  result.pmonitor = newShared[PluginMonitor]()
-  result.pmonitor[].lock.initLock()
-  result.pmonitor[].run = executing
-  result.pmonitor[].paths = paths
-
-  createThread(gThread, monitorPlugins, result.pmonitor)
+  createThread(gThread, monitorPlugins, paths)
 
 proc initPlugin(plugin: Plugin) =
   if plugin.onLoad.isNil:
@@ -405,8 +409,7 @@ proc loadPlugin(manager: PluginManager, dllPath: string) =
 proc stopPlugins*(manager: PluginManager) =
   ## Stops all plugins in the specified manager and frees all
   ## associated data
-  withLock manager.pmonitor[].lock:
-    manager.pmonitor[].run = stopped
+  gMainToMon.send("stopped")
 
   while manager.plugins.len != 0:
     let
@@ -416,25 +419,32 @@ proc stopPlugins*(manager: PluginManager) =
 
   gThread.joinThread()
 
-  manager.pmonitor[].load.clear()
-  manager.pmonitor[].processed.clear()
+proc handleCli(manager: PluginManager) =
+  if manager.cli.len != 0:
+    for command in manager.cli:
+      var
+        cmd = newCmdData(command)
+      callCommand(manager, cmd)
+    manager.cli = @[]
 
-  freeShared(manager.pmonitor)
+proc handleReady(manager: PluginManager) =
+  var
+    cmd = new(CmdData)
+  manager.readyPlugins(cmd)
+  manager.handleCli()
 
 proc reloadPlugins(manager: PluginManager) =
   var
-    load: OrderedSet[string]
-
-  withLock manager.pmonitor[].lock:
-    load = manager.pmonitor[].load
-
-    manager.pmonitor[].load.clear()
-
-  for i in load:
-    if i.fileExists():
-      manager.loadPlugin(i)
-    else:
-      notify(manager, i)
+    fromMon = gMonToMain.tryRecv()
+  if fromMon.dataAvailable:
+    case fromMon.msg
+    of "load":
+      manager.loadPlugin(gMonToMain.recv())
+    of "message":
+      notify(manager, gMonToMain.recv())
+    of "ready":
+      manager.ready = true
+      manager.handleReady()
 
   for i in manager.plugins.keys():
     if manager.plugins[i].onLoad.isNil:
@@ -456,24 +466,6 @@ proc tickPlugins(manager: PluginManager) =
       if cmd.failed:
         notify(manager, &"Plugin '{plugin.name}' failed in 'pluginTick()'")
 
-proc handleCli(manager: PluginManager) =
-  if manager.cli.len != 0:
-    for command in manager.cli:
-      var
-        cmd = newCmdData(command)
-      callCommand(manager, cmd)
-    manager.cli = @[]
-
-proc handleReady(manager: PluginManager) =
-  if not manager.ready:
-    withLock manager.pmonitor[].lock:
-      if manager.pmonitor[].ready:
-        manager.ready = true
-        var
-          cmd = new(CmdData)
-        manager.readyPlugins(cmd)
-        manager.handleCli()
-
 proc syncPlugins*(manager: PluginManager) =
   ## Give plugin system time to process all events
   ##
@@ -482,6 +474,5 @@ proc syncPlugins*(manager: PluginManager) =
   if not manager.ready or manager.tick == 25:
     manager.tick = 0
     manager.reloadPlugins()
-    manager.handleReady()
 
   manager.tickPlugins()

@@ -1,4 +1,4 @@
-import dynlib, locks, sets, tables
+import dynlib, sets, tables
 
 type
   CmdData* = ref object
@@ -43,14 +43,6 @@ type
     ## and `pstop` global callbacks
     executing, stopped, paused
 
-  PluginMonitor = object
-    lock: Lock
-    run: Run
-    paths: seq[string]
-    load: OrderedSet[string]
-    processed: HashSet[string]
-    ready: bool
-
   PluginManager* = ref object
     ## Manager of all loaded plugins and callbacks
     run*: Run                   ## State of system
@@ -58,8 +50,14 @@ type
     cli*: seq[string]           ## Commands to run when system is ready
 
     tick: int
-    pmonitor: ptr PluginMonitor
     plugins: OrderedTable[string, Plugin]
     pluginData: Table[string, pointer]
 
     callbacks: Table[string, pointer]
+
+var
+  gMainToMon*: Channel[string]
+  gMonToMain*: Channel[string]
+
+gMainToMon.open()
+gMonToMain.open()
