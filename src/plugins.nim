@@ -115,6 +115,8 @@ proc monitorPlugins(paths: seq[string]) {.thread.} =
       ready = true
       gMonToMain.send("ready")
       delay = 2000
+      when defined(binary):
+        break
 
     # BROKEN
     let
@@ -297,7 +299,10 @@ proc initPlugins*(paths: seq[string], cmds: seq[string] = @[]): PluginManager =
   addGlobalCallback(getCommandResult)
   addGlobalCallback(getCommandIntResult)
 
-  createThread(gThread, monitorPlugins, paths)
+  when defined(binary):
+    monitorPlugins(paths)
+  else:
+    createThread(gThread, monitorPlugins, paths)
 
 proc initPlugin(plugin: Plugin) =
   if plugin.onLoad.isNil:
